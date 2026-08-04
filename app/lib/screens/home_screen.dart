@@ -8,6 +8,7 @@ import '../models/transaction.dart';
 import '../repositories/account_repository.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/transaction_repository.dart';
+import '../services/outbox_service.dart';
 import 'new_transaction_screen.dart';
 
 final _currency = NumberFormat.currency(locale: 'es_CL', symbol: r'$', decimalDigits: 0);
@@ -23,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _accountRepo = AccountRepository(Supabase.instance.client);
   final _categoryRepo = CategoryRepository(Supabase.instance.client);
   final _transactionRepo = TransactionRepository(Supabase.instance.client);
+  final _outbox = OutboxService(TransactionRepository(Supabase.instance.client));
 
   late Future<(List<Account>, List<Transaction>)> _future;
 
@@ -30,6 +32,16 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _future = _load();
+  }
+
+  @override
+  void dispose() {
+    // HomeScreen is recreated on every login (main.dart's StreamBuilder
+    // swaps AppShell for LoginScreen when the session goes null, disposing
+    // this state), so without this the OutboxService's connectivity
+    // listener would leak and accumulate across logout/login cycles.
+    _outbox.dispose();
+    super.dispose();
   }
 
   Future<(List<Account>, List<Transaction>)> _load() async {
@@ -50,22 +62,35 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) => NewTransactionScreen(
           accounts: accounts.where((a) => a.activo).toList(),
           categories: categories,
-          // NewTransactionScreen._submit() (see new_transaction_screen.dart,
-          // fixed in commit 8bd23f0) already wraps `await widget.onSubmit(...)`
-          // in a try/catch that shows an inline error and does NOT pop the
-          // navigator on failure. So this callback intentionally does not
-          // catch here: if _transactionRepo.create throws, the exception
-          // propagates unchanged to that catch, `Navigator.pop` below is
-          // skipped (it's unreachable once the await throws), and the user
-          // sees the inline error instead of the screen silently popping.
+          // OutboxService.create() deliberately swallows network-failure
+          // exceptions and queues the transaction locally instead of
+          // rethrowing (offline-first by design, see outbox_service.dart).
+          // So unlike the old direct _transactionRepo.create(t) call, a
+          // network failure here will NOT reach
+          // NewTransactionScreen._submit()'s error-surfacing catch: it
+          // queues silently and the form closes normally below, same as a
+          // successful write. The pendingCount check after this screen
+          // closes is what tells the user their transaction was queued
+          // rather than actually saved.
           onSubmit: (t) async {
-            await _transactionRepo.create(t);
+            await _outbox.create(t);
             if (context.mounted) Navigator.pop(context);
           },
         ),
       ),
     );
-    if (mounted) _reload();
+    if (!mounted) return;
+    _reload();
+    final pending = _outbox.pendingCount;
+    if (pending > 0 && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '$pending transacción(es) pendiente(s) de sincronizar',
+          ),
+        ),
+      );
+    }
   }
 
   @override
