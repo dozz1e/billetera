@@ -80,7 +80,13 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
       nota: _notaController.text.trim().isEmpty ? null : _notaController.text.trim(),
     );
 
-    await widget.onSubmit(transaction);
+    try {
+      await widget.onSubmit(transaction);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = 'No se pudo guardar la transaccion. Revisa tu conexion e intenta de nuevo.');
+      }
+    }
   }
 
   @override
