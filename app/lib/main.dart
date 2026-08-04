@@ -6,6 +6,7 @@ import 'core/env.dart';
 import 'screens/accounts_screen.dart';
 import 'screens/app_shell.dart';
 import 'screens/budgets_screen.dart';
+import 'screens/charts_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
@@ -38,7 +39,7 @@ class BilleteraApp extends StatelessWidget {
               const HomeScreen(),
               const AccountsScreen(),
               const BudgetsScreen(),
-              const Center(child: Text('Graficas')), // replaced in Task 14
+              const ChartsScreen(),
               const HistoryScreen(),
             ],
           );
