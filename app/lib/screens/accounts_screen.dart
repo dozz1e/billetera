@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/account.dart';
 import '../repositories/account_repository.dart';
+import 'categories_screen.dart';
 
 const _tipos = ['efectivo', 'banco', 'credito', 'billetera_digital'];
 
@@ -96,7 +97,19 @@ class _AccountsScreenState extends State<AccountsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Cuentas')),
+      appBar: AppBar(
+        title: const Text('Cuentas'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.label_outline),
+            tooltip: 'Categorias',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CategoriesScreen()),
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openForm(),
         child: const Icon(Icons.add),
