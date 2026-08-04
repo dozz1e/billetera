@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/env.dart';
 import 'screens/accounts_screen.dart';
 import 'screens/app_shell.dart';
+import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 
 Future<void> main() async {
@@ -32,7 +33,7 @@ class BilleteraApp extends StatelessWidget {
           if (session == null) return const LoginScreen();
           return AppShell(
             tabs: [
-              const Center(child: Text('Home')), // replaced in Task 11
+              const HomeScreen(),
               const AccountsScreen(),
               const Center(child: Text('Presupuestos')), // replaced in Task 13
               const Center(child: Text('Graficas')), // replaced in Task 14
