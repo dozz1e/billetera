@@ -26,6 +26,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   Future<void> _openForm() async {
     final nombreController = TextEditingController();
     var tipo = 'gasto';
+    String? error;
 
     await showDialog<void>(
       context: context,
@@ -44,22 +45,31 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 ],
                 onChanged: (v) => setDialogState(() => tipo = v!),
               ),
+              if (error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(error!, style: const TextStyle(color: Colors.red)),
+                ),
             ],
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
             FilledButton(
               onPressed: () async {
-                await _repo.create(Category(
-                  id: '',
-                  userId: '',
-                  nombre: nombreController.text.trim(),
-                  tipo: tipo,
-                  icono: 'category',
-                  predefinida: false,
-                ));
-                if (context.mounted) Navigator.pop(context);
-                _reload();
+                try {
+                  await _repo.create(Category(
+                    id: '',
+                    userId: '',
+                    nombre: nombreController.text.trim(),
+                    tipo: tipo,
+                    icono: 'category',
+                    predefinida: false,
+                  ));
+                  if (context.mounted) Navigator.pop(context);
+                  if (mounted) _reload();
+                } catch (e) {
+                  setDialogState(() => error = 'No se pudo guardar la categoria. Revisa tu conexion e intenta de nuevo.');
+                }
               },
               child: const Text('Guardar'),
             ),
