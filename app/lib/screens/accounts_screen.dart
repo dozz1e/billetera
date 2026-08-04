@@ -29,6 +29,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     final nombreController = TextEditingController(text: account?.nombre ?? '');
     final saldoController = TextEditingController(text: account?.saldoInicial.toString() ?? '0');
     var tipo = account?.tipo ?? _tipos.first;
+    String? error;
 
     await showDialog<void>(
       context: context,
@@ -49,6 +50,11 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(labelText: 'Saldo inicial'),
               ),
+              if (error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(error!, style: const TextStyle(color: Colors.red)),
+                ),
             ],
           ),
           actions: [
@@ -56,24 +62,28 @@ class _AccountsScreenState extends State<AccountsScreen> {
             FilledButton(
               onPressed: () async {
                 final saldo = double.tryParse(saldoController.text) ?? 0;
-                if (account == null) {
-                  await _repo.create(Account(
-                    id: '',
-                    userId: '',
-                    nombre: nombreController.text.trim(),
-                    tipo: tipo,
-                    saldoInicial: saldo,
-                    activo: true,
-                  ));
-                } else {
-                  await _repo.update(account.id, {
-                    'nombre': nombreController.text.trim(),
-                    'tipo': tipo,
-                    'saldo_inicial': saldo,
-                  });
+                try {
+                  if (account == null) {
+                    await _repo.create(Account(
+                      id: '',
+                      userId: '',
+                      nombre: nombreController.text.trim(),
+                      tipo: tipo,
+                      saldoInicial: saldo,
+                      activo: true,
+                    ));
+                  } else {
+                    await _repo.update(account.id, {
+                      'nombre': nombreController.text.trim(),
+                      'tipo': tipo,
+                      'saldo_inicial': saldo,
+                    });
+                  }
+                  if (context.mounted) Navigator.pop(context);
+                  if (mounted) _reload();
+                } catch (e) {
+                  setDialogState(() => error = 'No se pudo guardar la cuenta. Revisa tu conexion e intenta de nuevo.');
                 }
-                if (context.mounted) Navigator.pop(context);
-                _reload();
               },
               child: const Text('Guardar'),
             ),
