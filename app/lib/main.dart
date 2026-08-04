@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/env.dart';
+import 'screens/accounts_screen.dart';
 import 'screens/app_shell.dart';
 import 'screens/login_screen.dart';
 
@@ -32,7 +33,7 @@ class BilleteraApp extends StatelessWidget {
           return AppShell(
             tabs: [
               const Center(child: Text('Home')), // replaced in Task 11
-              const Center(child: Text('Cuentas')), // replaced in Task 8
+              const AccountsScreen(),
               const Center(child: Text('Presupuestos')), // replaced in Task 13
               const Center(child: Text('Graficas')), // replaced in Task 14
               const Center(child: Text('Historial')), // replaced in Task 12
