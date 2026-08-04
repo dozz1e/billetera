@@ -11,6 +11,8 @@ void main() {
       Transaction(id: '2', userId: 'u', accountId: 'a1', categoryId: 'comida', tipo: TransactionType.gasto, monto: 50, fecha: DateTime(2026, 8, 10)),
       Transaction(id: '3', userId: 'u', accountId: 'a1', categoryId: 'transporte', tipo: TransactionType.gasto, monto: 999, fecha: DateTime(2026, 8, 10)),
       Transaction(id: '4', userId: 'u', accountId: 'a1', categoryId: 'comida', tipo: TransactionType.gasto, monto: 999, fecha: DateTime(2026, 7, 10)),
+      Transaction(id: '5', userId: 'u', accountId: 'a1', categoryId: 'comida', tipo: TransactionType.ingreso, monto: 999, fecha: DateTime(2026, 8, 15)),
+      Transaction(id: '6', userId: 'u', accountId: 'a1', accountDestinoId: 'a2', categoryId: 'comida', tipo: TransactionType.transferencia, monto: 999, fecha: DateTime(2026, 8, 15)),
     ];
 
     final result = calculateBudgetProgress(budgets: [budget], transactions: transactions);
