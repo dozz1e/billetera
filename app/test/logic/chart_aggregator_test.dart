@@ -53,13 +53,15 @@ void main() {
       final transactions = [
         Transaction(id: '1', userId: 'u', accountId: 'a1', categoryId: 'c', tipo: TransactionType.ingreso, monto: 50, fecha: DateTime(2026, 8, 1)),
         Transaction(id: '2', userId: 'u', accountId: 'a1', categoryId: 'c', tipo: TransactionType.gasto, monto: 20, fecha: DateTime(2026, 8, 2)),
+        Transaction(id: '3', userId: 'u', accountId: 'a1', accountDestinoId: 'a2', tipo: TransactionType.transferencia, monto: 30, fecha: DateTime(2026, 8, 3)),
       ];
 
       final points = balanceOverTime(accounts: accounts, transactions: transactions);
 
-      expect(points.length, 2);
+      expect(points.length, 3);
       expect(points[0].saldo, 150);
       expect(points[1].saldo, 130);
+      expect(points[2].saldo, 130); // transferencia does not change balance
     });
   });
 }
