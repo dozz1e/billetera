@@ -65,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-    _reload();
+    if (mounted) _reload();
   }
 
   @override
