@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/env.dart';
 import 'screens/accounts_screen.dart';
 import 'screens/app_shell.dart';
+import 'screens/history_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 
@@ -37,7 +38,7 @@ class BilleteraApp extends StatelessWidget {
               const AccountsScreen(),
               const Center(child: Text('Presupuestos')), // replaced in Task 13
               const Center(child: Text('Graficas')), // replaced in Task 14
-              const Center(child: Text('Historial')), // replaced in Task 12
+              const HistoryScreen(),
             ],
           );
         },
