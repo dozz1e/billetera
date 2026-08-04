@@ -19,6 +19,7 @@ class OutboxService {
   late final Box<Map> _box;
   late final StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   final _uuid = const Uuid();
+  bool _flushing = false;
 
   int get pendingCount => _box.length;
 
@@ -31,6 +32,16 @@ class OutboxService {
   }
 
   Future<void> flush() async {
+    if (_flushing) return;
+    _flushing = true;
+    try {
+      await _flushOnce();
+    } finally {
+      _flushing = false;
+    }
+  }
+
+  Future<void> _flushOnce() async {
     for (final key in _box.keys.toList()) {
       final json = Map<String, dynamic>.from(_box.get(key)!);
       try {
