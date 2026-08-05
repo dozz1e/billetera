@@ -45,7 +45,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     return calculateBudgetProgress(budgets: budgets, transactions: transactions);
   }
 
-  void _reload() => setState(() => _future = _load());
+  void _reload() => setState(() { _future = _load(); });
 
   Future<void> _openForm() async {
     if (_categories.isEmpty) return;
@@ -91,11 +91,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     mes: _mesActual,
                     montoLimite: monto,
                   ));
-                  if (context.mounted) Navigator.pop(context);
-                  if (mounted) _reload();
                 } catch (e) {
                   setDialogState(() => error = 'No se pudo guardar el presupuesto. Revisa tu conexion e intenta de nuevo.');
+                  return;
                 }
+                if (context.mounted) Navigator.pop(context);
+                if (mounted) _reload();
               },
               child: const Text('Guardar'),
             ),

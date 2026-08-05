@@ -24,7 +24,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     _future = _repo.fetchAll();
   }
 
-  void _reload() => setState(() => _future = _repo.fetchAll());
+  void _reload() => setState(() { _future = _repo.fetchAll(); });
 
   Future<void> _openForm({Account? account}) async {
     final nombreController = TextEditingController(text: account?.nombre ?? '');
@@ -80,11 +80,12 @@ class _AccountsScreenState extends State<AccountsScreen> {
                       'saldo_inicial': saldo,
                     });
                   }
-                  if (context.mounted) Navigator.pop(context);
-                  if (mounted) _reload();
                 } catch (e) {
                   setDialogState(() => error = 'No se pudo guardar la cuenta. Revisa tu conexion e intenta de nuevo.');
+                  return;
                 }
+                if (context.mounted) Navigator.pop(context);
+                if (mounted) _reload();
               },
               child: const Text('Guardar'),
             ),

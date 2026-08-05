@@ -21,7 +21,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     _future = _repo.fetchAll();
   }
 
-  void _reload() => setState(() => _future = _repo.fetchAll());
+  void _reload() => setState(() { _future = _repo.fetchAll(); });
 
   Future<void> _openForm() async {
     final nombreController = TextEditingController();
@@ -65,11 +65,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     icono: 'category',
                     predefinida: false,
                   ));
-                  if (context.mounted) Navigator.pop(context);
-                  if (mounted) _reload();
                 } catch (e) {
                   setDialogState(() => error = 'No se pudo guardar la categoria. Revisa tu conexion e intenta de nuevo.');
+                  return;
                 }
+                if (context.mounted) Navigator.pop(context);
+                if (mounted) _reload();
               },
               child: const Text('Guardar'),
             ),

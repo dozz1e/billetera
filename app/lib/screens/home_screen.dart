@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return (accounts, transactions);
   }
 
-  void _reload() => setState(() => _future = _load());
+  void _reload() => setState(() { _future = _load(); });
 
   Future<void> _openNewTransaction() async {
     final accounts = await _accountRepo.fetchAll();
