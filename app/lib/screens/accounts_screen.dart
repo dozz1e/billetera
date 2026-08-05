@@ -133,8 +133,16 @@ class _AccountsScreenState extends State<AccountsScreen> {
                         icon: const Icon(Icons.archive_outlined),
                         tooltip: 'Desactivar',
                         onPressed: () async {
-                          await _repo.update(a.id, {'activo': false});
-                          _reload();
+                          final messenger = ScaffoldMessenger.of(context);
+                          try {
+                            await _repo.update(a.id, {'activo': false});
+                          } catch (e) {
+                            messenger.showSnackBar(const SnackBar(
+                              content: Text('No se pudo desactivar la cuenta. Revisa tu conexion e intenta de nuevo.'),
+                            ));
+                            return;
+                          }
+                          if (mounted) _reload();
                         },
                       )
                     : const Text('inactiva'),
