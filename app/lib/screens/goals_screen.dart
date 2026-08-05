@@ -71,7 +71,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
     return result;
   }
 
-  void _reload() => setState(() => _future = _load());
+  void _reload() => setState(() { _future = _load(); });
 
   Future<void> _openForm() async {
     final cuentasActivas = _accounts.where((a) => a.activo).toList();
@@ -142,11 +142,12 @@ class _GoalsScreenState extends State<GoalsScreen> {
                     fechaObjetivo: fecha,
                     estado: 'activo',
                   ));
-                  if (context.mounted) Navigator.pop(context);
-                  if (mounted) _reload();
                 } catch (e) {
                   setDialogState(() => error = 'No se pudo guardar la meta. Revisa tu conexion e intenta de nuevo.');
+                  return;
                 }
+                if (context.mounted) Navigator.pop(context);
+                if (mounted) _reload();
               },
               child: const Text('Guardar'),
             ),
