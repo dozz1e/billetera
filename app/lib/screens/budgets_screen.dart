@@ -8,6 +8,7 @@ import '../models/category.dart';
 import '../repositories/budget_repository.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/transaction_repository.dart';
+import 'goals_screen.dart';
 
 final _currency = NumberFormat.currency(locale: 'es_CL', symbol: r'$', decimalDigits: 0);
 
@@ -106,39 +107,52 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Presupuestos')),
-      floatingActionButton: FloatingActionButton(onPressed: _openForm, child: const Icon(Icons.add)),
-      body: FutureBuilder<List<BudgetProgress>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-          final progresos = snapshot.data!;
-          if (progresos.isEmpty) return const Center(child: Text('Sin presupuestos este mes'));
-          return ListView.builder(
-            itemCount: progresos.length,
-            itemBuilder: (context, i) {
-              final p = progresos[i];
-              final categoria = _categories.firstWhere(
-                (c) => c.id == p.budget.categoryId,
-                orElse: () => Category(id: '', userId: '', nombre: 'Categoria', tipo: 'gasto', icono: '', predefinida: false),
-              );
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${categoria.nombre}: ${_currency.format(p.gastado)} / ${_currency.format(p.budget.montoLimite)}'),
-                    LinearProgressIndicator(
-                      value: p.porcentaje.clamp(0, 1),
-                      color: p.excedido ? Colors.red : Colors.teal,
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Presupuestos'),
+          bottom: const TabBar(tabs: [Tab(text: 'Presupuestos'), Tab(text: 'Metas')]),
+        ),
+        body: TabBarView(
+          children: [
+            Scaffold(
+              floatingActionButton: FloatingActionButton(onPressed: _openForm, child: const Icon(Icons.add)),
+              body: FutureBuilder<List<BudgetProgress>>(
+                future: _future,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                  final progresos = snapshot.data!;
+                  if (progresos.isEmpty) return const Center(child: Text('Sin presupuestos este mes'));
+                  return ListView.builder(
+                    itemCount: progresos.length,
+                    itemBuilder: (context, i) {
+                      final p = progresos[i];
+                      final categoria = _categories.firstWhere(
+                        (c) => c.id == p.budget.categoryId,
+                        orElse: () => const Category(id: '', userId: '', nombre: 'Categoria', tipo: 'gasto', icono: '', predefinida: false),
+                      );
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${categoria.nombre}: ${_currency.format(p.gastado)} / ${_currency.format(p.budget.montoLimite)}'),
+                            LinearProgressIndicator(
+                              value: p.porcentaje.clamp(0, 1),
+                              color: p.excedido ? Colors.red : Colors.teal,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            const GoalsScreen(),
+          ],
+        ),
       ),
     );
   }
