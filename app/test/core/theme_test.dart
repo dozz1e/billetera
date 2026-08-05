@@ -7,6 +7,7 @@ void main() {
   test('appTheme usa fondo y superficie de card planos, oscuros', () {
     expect(appTheme.scaffoldBackgroundColor, const Color(0xFF121212));
     expect(appTheme.cardColor, const Color(0xFF1E1E1E));
+    expect(appTheme.cardTheme.color, const Color(0xFF1E1E1E));
   });
 
   test('appTheme usa brightness oscuro con semilla teal', () {
