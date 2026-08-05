@@ -17,7 +17,10 @@ class AccountRepository {
   Future<Account> create(Account account) async {
     final row = await _client
         .from('accounts')
-        .insert(account.toInsertJson())
+        .insert({
+          ...account.toInsertJson(),
+          'user_id': _client.auth.currentUser!.id,
+        })
         .select()
         .single();
     return Account.fromJson(row);

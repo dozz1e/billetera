@@ -17,7 +17,10 @@ class CategoryRepository {
   Future<Category> create(Category category) async {
     final row = await _client
         .from('categories')
-        .insert(category.toInsertJson())
+        .insert({
+          ...category.toInsertJson(),
+          'user_id': _client.auth.currentUser!.id,
+        })
         .select()
         .single();
     return Category.fromJson(row);

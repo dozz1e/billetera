@@ -35,7 +35,10 @@ class TransactionRepository {
   Future<Transaction> create(Transaction transaction) async {
     final row = await _client
         .from('transactions')
-        .insert(transaction.toInsertJson())
+        .insert({
+          ...transaction.toInsertJson(),
+          'user_id': _client.auth.currentUser!.id,
+        })
         .select()
         .single();
     return Transaction.fromJson(row);

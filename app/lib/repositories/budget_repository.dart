@@ -21,7 +21,10 @@ class BudgetRepository {
   Future<Budget> upsert(Budget budget) async {
     final row = await _client
         .from('budgets')
-        .upsert(budget.toInsertJson(), onConflict: 'user_id,category_id,mes')
+        .upsert({
+          ...budget.toInsertJson(),
+          'user_id': _client.auth.currentUser!.id,
+        }, onConflict: 'user_id,category_id,mes')
         .select()
         .single();
     return Budget.fromJson(row);
