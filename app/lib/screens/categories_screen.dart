@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/colors.dart';
 import '../models/category.dart';
 import '../repositories/category_repository.dart';
 
@@ -21,7 +22,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     _future = _repo.fetchAll();
   }
 
-  void _reload() => setState(() { _future = _repo.fetchAll(); });
+  void _reload() => setState(() {
+    _future = _repo.fetchAll();
+  });
 
   Future<void> _openForm() async {
     final nombreController = TextEditingController();
@@ -36,7 +39,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nombreController, decoration: const InputDecoration(labelText: 'Nombre')),
+              TextField(
+                controller: nombreController,
+                decoration: const InputDecoration(labelText: 'Nombre'),
+              ),
               DropdownButton<String>(
                 value: tipo,
                 items: const [
@@ -48,25 +54,38 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               if (error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
-                  child: Text(error!, style: const TextStyle(color: Colors.red)),
+                  child: Text(
+                    error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
                 ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
             FilledButton(
               onPressed: () async {
                 try {
-                  await _repo.create(Category(
-                    id: '',
-                    userId: '',
-                    nombre: nombreController.text.trim(),
-                    tipo: tipo,
-                    icono: 'category',
-                    predefinida: false,
-                  ));
+                  await _repo.create(
+                    Category(
+                      id: '',
+                      userId: '',
+                      nombre: nombreController.text.trim(),
+                      tipo: tipo,
+                      icono: 'category',
+                      predefinida: false,
+                    ),
+                  );
                 } catch (e) {
-                  setDialogState(() => error = 'No se pudo guardar la categoria. Revisa tu conexion e intenta de nuevo.');
+                  setDialogState(
+                    () => error =
+                        'No se pudo guardar la categoria. Revisa tu conexion e intenta de nuevo.',
+                  );
                   return;
                 }
                 if (context.mounted) Navigator.pop(context);
@@ -91,18 +110,47 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       body: FutureBuilder<List<Category>>(
         future: _future,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData)
+            return const Center(child: CircularProgressIndicator());
           final categories = snapshot.data!;
-          return ListView.builder(
-            itemCount: categories.length,
-            itemBuilder: (context, i) {
-              final c = categories[i];
-              return ListTile(
-                title: Text(c.nombre),
-                subtitle: Text(c.tipo),
-                trailing: c.predefinida ? const Chip(label: Text('predefinida')) : null,
-              );
-            },
+          if (categories.isEmpty)
+            return const Center(child: Text('Sin categorias todavia'));
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Card(
+                child: Column(
+                  children: [
+                    for (final (i, c) in categories.indexed) ...[
+                      if (i > 0) const Divider(height: 1),
+                      Builder(
+                        builder: (context) {
+                          final color = c.tipo == 'ingreso'
+                              ? AppColors.ingreso
+                              : AppColors.gasto;
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: color.withValues(alpha: 0.16),
+                              child: Icon(
+                                c.tipo == 'ingreso'
+                                    ? Icons.trending_up_rounded
+                                    : Icons.sell_outlined,
+                                color: color,
+                              ),
+                            ),
+                            title: Text(c.nombre),
+                            subtitle: Text(c.tipo),
+                            trailing: c.predefinida
+                                ? const Chip(label: Text('predefinida'))
+                                : null,
+                          );
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           );
         },
       ),

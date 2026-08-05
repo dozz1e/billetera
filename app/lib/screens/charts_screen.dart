@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/colors.dart';
 import '../logic/balance_calculator.dart';
 import '../logic/chart_aggregator.dart';
 import '../models/account.dart';
@@ -11,7 +12,7 @@ import '../repositories/account_repository.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/transaction_repository.dart';
 
-const _palette = [Colors.teal, Colors.orange, Colors.purple, Colors.blue, Colors.pink, Colors.brown, Colors.green, Colors.indigo];
+const _palette = AppColors.chartPalette;
 
 class ChartsScreen extends StatefulWidget {
   const ChartsScreen({super.key});
@@ -47,7 +48,8 @@ class _ChartsScreenState extends State<ChartsScreen> {
       body: FutureBuilder<(List<Account>, List<Category>, List<Transaction>)>(
         future: _future,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData)
+            return const Center(child: CircularProgressIndicator());
           final (accounts, categories, transactions) = snapshot.data!;
           final now = DateTime.now();
           final categoryNames = {for (final c in categories) c.id: c.nombre};
@@ -58,100 +60,154 @@ class _ChartsScreenState extends State<ChartsScreen> {
             year: now.year,
             month: now.month,
           );
-          final mensual = monthlyIncomeVsExpense(transactions: transactions, monthsBack: 6, referenceDate: now);
-          final saldoEnElTiempo = balanceOverTime(accounts: accounts, transactions: transactions);
+          final mensual = monthlyIncomeVsExpense(
+            transactions: transactions,
+            monthsBack: 6,
+            referenceDate: now,
+          );
+          final saldoEnElTiempo = balanceOverTime(
+            accounts: accounts,
+            transactions: transactions,
+          );
+
+          Widget chartCard(String titulo, Widget chart) => Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(titulo, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 16),
+                  SizedBox(height: 220, child: chart),
+                ],
+              ),
+            ),
+          );
 
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Gasto por categoria (este mes)', style: Theme.of(context).textTheme.titleMedium),
-              SizedBox(
-                height: 220,
-                child: gastosPorCategoria.isEmpty
+              chartCard(
+                'Gasto por categoria (este mes)',
+                gastosPorCategoria.isEmpty
                     ? const Center(child: Text('Sin gastos este mes'))
-                    : PieChart(PieChartData(sections: [
-                        for (final (i, entry) in gastosPorCategoria.entries.indexed)
-                          PieChartSectionData(
-                            value: entry.value,
-                            title: entry.key,
-                            color: _palette[i % _palette.length],
-                            radius: 80,
-                          ),
-                      ])),
-              ),
-              const SizedBox(height: 32),
-              Text('Ingresos vs gastos (6 meses)', style: Theme.of(context).textTheme.titleMedium),
-              SizedBox(
-                height: 220,
-                child: BarChart(BarChartData(
-                  barGroups: [
-                    for (final (i, m) in mensual.indexed)
-                      BarChartGroupData(x: i, barRods: [
-                        BarChartRodData(toY: m.ingresos, color: Colors.teal, width: 8),
-                        BarChartRodData(toY: m.gastos, color: Colors.red, width: 8),
-                      ]),
-                  ],
-                  titlesData: FlTitlesData(
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          final i = value.toInt();
-                          if (i < 0 || i >= mensual.length) return const SizedBox.shrink();
-                          return Text('${mensual[i].month}/${mensual[i].year % 100}');
-                        },
-                      ),
-                    ),
-                  ),
-                )),
-              ),
-              const SizedBox(height: 32),
-              Text('Evolucion del saldo', style: Theme.of(context).textTheme.titleMedium),
-              SizedBox(
-                height: 220,
-                child: saldoEnElTiempo.isEmpty
-                    ? const Center(child: Text('Sin datos'))
-                    : LineChart(LineChartData(
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: [
-                              for (final (i, p) in saldoEnElTiempo.indexed) FlSpot(i.toDouble(), p.saldo),
-                            ],
-                            isCurved: false,
-                            color: Colors.teal,
-                            dotData: const FlDotData(show: false),
-                          ),
-                        ],
-                      )),
-              ),
-              const SizedBox(height: 32),
-              Text('Saldo por cuenta', style: Theme.of(context).textTheme.titleMedium),
-              SizedBox(
-                height: 220,
-                child: BarChart(BarChartData(
-                  barGroups: [
-                    for (final (i, a) in accounts.indexed)
-                      BarChartGroupData(x: i, barRods: [
-                        BarChartRodData(
-                          toY: calculateAccountBalance(saldoInicial: a.saldoInicial, accountId: a.id, transactions: transactions),
-                          color: _palette[i % _palette.length],
-                          width: 16,
+                    : PieChart(
+                        PieChartData(
+                          sections: [
+                            for (final (i, entry)
+                                in gastosPorCategoria.entries.indexed)
+                              PieChartSectionData(
+                                value: entry.value,
+                                title: entry.key,
+                                color: _palette[i % _palette.length],
+                                radius: 80,
+                              ),
+                          ],
                         ),
-                      ]),
-                  ],
-                  titlesData: FlTitlesData(
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          final i = value.toInt();
-                          if (i < 0 || i >= accounts.length) return const SizedBox.shrink();
-                          return Text(accounts[i].nombre, style: const TextStyle(fontSize: 10));
-                        },
+                      ),
+              ),
+              const SizedBox(height: 16),
+              chartCard(
+                'Ingresos vs gastos (6 meses)',
+                BarChart(
+                  BarChartData(
+                    barGroups: [
+                      for (final (i, m) in mensual.indexed)
+                        BarChartGroupData(
+                          x: i,
+                          barRods: [
+                            BarChartRodData(
+                              toY: m.ingresos,
+                              color: AppColors.ingreso,
+                              width: 8,
+                            ),
+                            BarChartRodData(
+                              toY: m.gastos,
+                              color: AppColors.gasto,
+                              width: 8,
+                            ),
+                          ],
+                        ),
+                    ],
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            final i = value.toInt();
+                            if (i < 0 || i >= mensual.length)
+                              return const SizedBox.shrink();
+                            return Text(
+                              '${mensual[i].month}/${mensual[i].year % 100}',
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
-                )),
+                ),
+              ),
+              const SizedBox(height: 16),
+              chartCard(
+                'Evolucion del saldo',
+                saldoEnElTiempo.isEmpty
+                    ? const Center(child: Text('Sin datos'))
+                    : LineChart(
+                        LineChartData(
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: [
+                                for (final (i, p) in saldoEnElTiempo.indexed)
+                                  FlSpot(i.toDouble(), p.saldo),
+                              ],
+                              isCurved: false,
+                              color: Theme.of(context).colorScheme.primary,
+                              dotData: const FlDotData(show: false),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+              const SizedBox(height: 16),
+              chartCard(
+                'Saldo por cuenta',
+                BarChart(
+                  BarChartData(
+                    barGroups: [
+                      for (final (i, a) in accounts.indexed)
+                        BarChartGroupData(
+                          x: i,
+                          barRods: [
+                            BarChartRodData(
+                              toY: calculateAccountBalance(
+                                saldoInicial: a.saldoInicial,
+                                accountId: a.id,
+                                transactions: transactions,
+                              ),
+                              color: _palette[i % _palette.length],
+                              width: 16,
+                            ),
+                          ],
+                        ),
+                    ],
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            final i = value.toInt();
+                            if (i < 0 || i >= accounts.length)
+                              return const SizedBox.shrink();
+                            return Text(
+                              accounts[i].nombre,
+                              style: const TextStyle(fontSize: 10),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           );

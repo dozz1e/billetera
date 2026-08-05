@@ -10,7 +10,7 @@ void main() {
     expect(appTheme.cardTheme.color, const Color(0xFF1E1E1E));
   });
 
-  test('appTheme usa brightness oscuro con semilla teal', () {
+  test('appTheme usa brightness oscuro con semilla azul', () {
     expect(appTheme.brightness, Brightness.dark);
     expect(appTheme.colorScheme.brightness, Brightness.dark);
   });

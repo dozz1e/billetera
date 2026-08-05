@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/colors.dart';
 import '../logic/balance_calculator.dart';
 import '../logic/goal_state.dart';
 import '../models/account.dart';
@@ -11,11 +12,19 @@ import '../repositories/goal_repository.dart';
 import '../repositories/transaction_repository.dart';
 import 'goal_detail_screen.dart';
 
-final _currency = NumberFormat.currency(locale: 'es_CL', symbol: r'$', decimalDigits: 0);
+final _currency = NumberFormat.currency(
+  locale: 'es_CL',
+  symbol: r'$',
+  decimalDigits: 0,
+);
 final _date = DateFormat('dd/MM/yyyy');
 
 class GoalWithProgress {
-  const GoalWithProgress({required this.goal, required this.ahorrado, required this.account});
+  const GoalWithProgress({
+    required this.goal,
+    required this.ahorrado,
+    required this.account,
+  });
 
   final Goal goal;
   final double ahorrado;
@@ -53,25 +62,44 @@ class _GoalsScreenState extends State<GoalsScreen> {
     for (final goal in goals) {
       final account = accounts.firstWhere(
         (a) => a.id == goal.accountId,
-        orElse: () => const Account(id: '', userId: '', nombre: 'Cuenta', tipo: 'efectivo', saldoInicial: 0, activo: false),
+        orElse: () => const Account(
+          id: '',
+          userId: '',
+          nombre: 'Cuenta',
+          tipo: 'efectivo',
+          saldoInicial: 0,
+          activo: false,
+        ),
       );
       final ahorrado = calculateAccountBalance(
         saldoInicial: account.saldoInicial,
         accountId: goal.accountId,
         transactions: transactions,
       );
-      final nuevoEstado = nextGoalState(ahorrado: ahorrado, montoObjetivo: goal.montoObjetivo, estadoActual: goal.estado);
+      final nuevoEstado = nextGoalState(
+        ahorrado: ahorrado,
+        montoObjetivo: goal.montoObjetivo,
+        estadoActual: goal.estado,
+      );
 
       var goalActual = goal;
       if (nuevoEstado != goal.estado) {
         goalActual = await _goalRepo.updateEstado(goal.id, nuevoEstado);
       }
-      result.add(GoalWithProgress(goal: goalActual, ahorrado: ahorrado, account: account));
+      result.add(
+        GoalWithProgress(
+          goal: goalActual,
+          ahorrado: ahorrado,
+          account: account,
+        ),
+      );
     }
     return result;
   }
 
-  void _reload() => setState(() { _future = _load(); });
+  void _reload() => setState(() {
+    _future = _load();
+  });
 
   Future<void> _openForm() async {
     final cuentasActivas = _accounts.where((a) => a.activo).toList();
@@ -91,15 +119,25 @@ class _GoalsScreenState extends State<GoalsScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nombreController, decoration: const InputDecoration(labelText: 'Nombre')),
+              TextField(
+                controller: nombreController,
+                decoration: const InputDecoration(labelText: 'Nombre'),
+              ),
               DropdownButton<String>(
                 value: accountId,
-                items: cuentasActivas.map((a) => DropdownMenuItem(value: a.id, child: Text(a.nombre))).toList(),
+                items: cuentasActivas
+                    .map(
+                      (a) =>
+                          DropdownMenuItem(value: a.id, child: Text(a.nombre)),
+                    )
+                    .toList(),
                 onChanged: (v) => setDialogState(() => accountId = v!),
               ),
               TextField(
                 controller: montoController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(labelText: 'Monto objetivo'),
               ),
               Row(
@@ -112,9 +150,12 @@ class _GoalsScreenState extends State<GoalsScreen> {
                         context: context,
                         initialDate: fecha,
                         firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 3650)),
+                        lastDate: DateTime.now().add(
+                          const Duration(days: 3650),
+                        ),
                       );
-                      if (picked != null && context.mounted) setDialogState(() => fecha = picked);
+                      if (picked != null && context.mounted)
+                        setDialogState(() => fecha = picked);
                     },
                     child: const Text('Cambiar'),
                   ),
@@ -123,27 +164,40 @@ class _GoalsScreenState extends State<GoalsScreen> {
               if (error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
-                  child: Text(error!, style: const TextStyle(color: Colors.red)),
+                  child: Text(
+                    error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
                 ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
             FilledButton(
               onPressed: () async {
                 final monto = double.tryParse(montoController.text) ?? 0;
                 try {
-                  await _goalRepo.create(Goal(
-                    id: '',
-                    userId: '',
-                    nombre: nombreController.text.trim(),
-                    accountId: accountId,
-                    montoObjetivo: monto,
-                    fechaObjetivo: fecha,
-                    estado: 'activo',
-                  ));
+                  await _goalRepo.create(
+                    Goal(
+                      id: '',
+                      userId: '',
+                      nombre: nombreController.text.trim(),
+                      accountId: accountId,
+                      montoObjetivo: monto,
+                      fechaObjetivo: fecha,
+                      estado: 'activo',
+                    ),
+                  );
                 } catch (e) {
-                  setDialogState(() => error = 'No se pudo guardar la meta. Revisa tu conexion e intenta de nuevo.');
+                  setDialogState(
+                    () => error =
+                        'No se pudo guardar la meta. Revisa tu conexion e intenta de nuevo.',
+                  );
                   return;
                 }
                 if (context.mounted) Navigator.pop(context);
@@ -166,7 +220,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
           ahorrado: gp.ahorrado,
           cuentaNombre: gp.account.nombre,
           onTogglePausado: () async {
-            final nuevoEstado = gp.goal.estado == 'pausado' ? 'activo' : 'pausado';
+            final nuevoEstado = gp.goal.estado == 'pausado'
+                ? 'activo'
+                : 'pausado';
             await _goalRepo.updateEstado(gp.goal.id, nuevoEstado);
           },
         ),
@@ -177,25 +233,58 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
   Widget _lista(List<GoalWithProgress> metas, String estado) {
     final filtradas = metas.where((m) => m.goal.estado == estado).toList();
-    if (filtradas.isEmpty) return const Center(child: Text('Sin metas en este estado'));
-    return ListView.builder(
-      itemCount: filtradas.length,
-      itemBuilder: (context, i) {
-        final gp = filtradas[i];
-        final porcentaje = gp.goal.montoObjetivo <= 0 ? 0.0 : gp.ahorrado / gp.goal.montoObjetivo;
-        return ListTile(
-          leading: const Icon(Icons.flag),
-          title: Text(gp.goal.nombre),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    if (filtradas.isEmpty)
+      return const Center(child: Text('Sin metas en este estado'));
+    final primary = Theme.of(context).colorScheme.primary;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Card(
+          child: Column(
             children: [
-              LinearProgressIndicator(value: porcentaje.clamp(0, 1)),
-              Text('${_currency.format(gp.ahorrado)} / ${_currency.format(gp.goal.montoObjetivo)}'),
+              for (final (i, gp) in filtradas.indexed) ...[
+                if (i > 0) const Divider(height: 1),
+                Builder(
+                  builder: (context) {
+                    final porcentaje = gp.goal.montoObjetivo <= 0
+                        ? 0.0
+                        : gp.ahorrado / gp.goal.montoObjetivo;
+                    final visual = goalVisual(gp.goal.estado, primary);
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: visual.color.withValues(alpha: 0.16),
+                        child: Icon(visual.icon, color: visual.color),
+                      ),
+                      title: Text(gp.goal.nombre),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: porcentaje.clamp(0, 1),
+                                minHeight: 6,
+                                color: visual.color,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_currency.format(gp.ahorrado)} / ${_currency.format(gp.goal.montoObjetivo)}',
+                            ),
+                          ],
+                        ),
+                      ),
+                      onTap: () => _abrirDetalle(gp),
+                    );
+                  },
+                ),
+              ],
             ],
           ),
-          onTap: () => _abrirDetalle(gp),
-        );
-      },
+        ),
+      ],
     );
   }
 
@@ -205,14 +294,19 @@ class _GoalsScreenState extends State<GoalsScreen> {
       body: FutureBuilder<List<GoalWithProgress>>(
         future: _future,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData)
+            return const Center(child: CircularProgressIndicator());
           final metas = snapshot.data!;
           return DefaultTabController(
             length: 3,
             child: Column(
               children: [
                 const TabBar(
-                  tabs: [Tab(text: 'Activo'), Tab(text: 'Pausado'), Tab(text: 'Alcanzado')],
+                  tabs: [
+                    Tab(text: 'Activo'),
+                    Tab(text: 'Pausado'),
+                    Tab(text: 'Alcanzado'),
+                  ],
                 ),
                 Expanded(
                   child: TabBarView(
@@ -228,7 +322,10 @@ class _GoalsScreenState extends State<GoalsScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(onPressed: _openForm, child: const Icon(Icons.add)),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openForm,
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }

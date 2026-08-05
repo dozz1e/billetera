@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/colors.dart';
 import '../logic/balance_calculator.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
@@ -11,7 +12,11 @@ import '../repositories/transaction_repository.dart';
 import '../services/outbox_service.dart';
 import 'new_transaction_screen.dart';
 
-final _currency = NumberFormat.currency(locale: 'es_CL', symbol: r'$', decimalDigits: 0);
+final _currency = NumberFormat.currency(
+  locale: 'es_CL',
+  symbol: r'$',
+  decimalDigits: 0,
+);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,7 +29,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final _accountRepo = AccountRepository(Supabase.instance.client);
   final _categoryRepo = CategoryRepository(Supabase.instance.client);
   final _transactionRepo = TransactionRepository(Supabase.instance.client);
-  final _outbox = OutboxService(TransactionRepository(Supabase.instance.client));
+  final _outbox = OutboxService(
+    TransactionRepository(Supabase.instance.client),
+  );
 
   late Future<(List<Account>, List<Transaction>)> _future;
 
@@ -50,7 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return (accounts, transactions);
   }
 
-  void _reload() => setState(() { _future = _load(); });
+  void _reload() => setState(() {
+    _future = _load();
+  });
 
   Future<void> _openNewTransaction() async {
     final accounts = await _accountRepo.fetchAll();
@@ -85,9 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (pending > 0 && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            '$pending transacción(es) pendiente(s) de sincronizar',
-          ),
+          content: Text('$pending transacción(es) pendiente(s) de sincronizar'),
         ),
       );
     }
@@ -95,6 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Billetera')),
       floatingActionButton: FloatingActionButton(
@@ -104,9 +112,13 @@ class _HomeScreenState extends State<HomeScreen> {
       body: FutureBuilder<(List<Account>, List<Transaction>)>(
         future: _future,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData)
+            return const Center(child: CircularProgressIndicator());
           final (accounts, transactions) = snapshot.data!;
-          final total = calculateTotalBalance(accounts: accounts, allTransactions: transactions);
+          final total = calculateTotalBalance(
+            accounts: accounts,
+            allTransactions: transactions,
+          );
           final recientes = transactions.take(10).toList();
 
           return RefreshIndicator(
@@ -114,11 +126,42 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Text('Saldo total', style: Theme.of(context).textTheme.titleMedium),
-                Text(_currency.format(total), style: Theme.of(context).textTheme.headlineMedium),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: scheme.primary.withValues(
+                            alpha: 0.16,
+                          ),
+                          child: Icon(
+                            Icons.account_balance_wallet_rounded,
+                            color: scheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Saldo total',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Text(
+                              _currency.format(total),
+                              style: Theme.of(context).textTheme.headlineMedium,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 SizedBox(
-                  height: 100,
+                  height: 92,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: accounts.length,
@@ -130,6 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         accountId: a.id,
                         transactions: transactions,
                       );
+                      final visual = accountVisual(a.tipo, scheme.primary);
                       return Card(
                         child: Padding(
                           padding: const EdgeInsets.all(12),
@@ -137,7 +181,23 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(a.nombre, style: Theme.of(context).textTheme.labelLarge),
+                              Row(
+                                children: [
+                                  Icon(
+                                    visual.icon,
+                                    size: 16,
+                                    color: visual.color,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    a.nombre,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelLarge,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
                               Text(_currency.format(balance)),
                             ],
                           ),
@@ -147,17 +207,48 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text('Transacciones recientes', style: Theme.of(context).textTheme.titleMedium),
-                ...recientes.map((t) => ListTile(
-                      leading: Icon(switch (t.tipo) {
-                        TransactionType.ingreso => Icons.arrow_downward,
-                        TransactionType.gasto => Icons.arrow_upward,
-                        TransactionType.transferencia => Icons.swap_horiz,
-                      }),
-                      title: Text(_currency.format(t.monto)),
-                      subtitle: Text(t.nota ?? t.tipo.name),
-                      trailing: Text(DateFormat('dd/MM').format(t.fecha)),
-                    )),
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 8),
+                  child: Text(
+                    'Transacciones recientes',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                Card(
+                  child: recientes.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Text('Sin transacciones todavia'),
+                        )
+                      : Column(
+                          children: [
+                            for (final (i, t) in recientes.indexed) ...[
+                              if (i > 0) const Divider(height: 1),
+                              Builder(
+                                builder: (context) {
+                                  final visual = transactionVisual(t.tipo);
+                                  return ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: visual.color.withValues(
+                                        alpha: 0.16,
+                                      ),
+                                      child: Icon(
+                                        visual.icon,
+                                        color: visual.color,
+                                      ),
+                                    ),
+                                    title: Text(_currency.format(t.monto)),
+                                    subtitle: Text(t.nota ?? t.tipo.name),
+                                    trailing: Text(
+                                      DateFormat('dd/MM').format(t.fecha),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
+                ),
               ],
             ),
           );
