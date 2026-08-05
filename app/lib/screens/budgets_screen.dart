@@ -163,6 +163,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           children: [
             Scaffold(
               floatingActionButton: FloatingActionButton(
+                heroTag: 'budgets_fab',
                 onPressed: _openForm,
                 child: const Icon(Icons.add),
               ),

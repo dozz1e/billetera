@@ -323,6 +323,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'goals_fab',
         onPressed: _openForm,
         child: const Icon(Icons.add),
       ),
