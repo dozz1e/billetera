@@ -114,7 +114,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 3650)),
                       );
-                      if (picked != null) setDialogState(() => fecha = picked);
+                      if (picked != null && context.mounted) setDialogState(() => fecha = picked);
                     },
                     child: const Text('Cambiar'),
                   ),
