@@ -10,7 +10,7 @@ import '../repositories/account_repository.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/transaction_repository.dart';
 import '../services/outbox_service.dart';
-import 'new_transaction_screen.dart';
+import 'transaction_form_screen.dart';
 
 final _currency = NumberFormat.currency(
   locale: 'es_CL',
@@ -68,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => NewTransactionScreen(
+        builder: (context) => TransactionFormScreen(
           accounts: accounts.where((a) => a.activo).toList(),
           categories: categories,
           // OutboxService.create() deliberately swallows network-failure
