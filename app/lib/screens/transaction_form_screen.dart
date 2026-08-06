@@ -1,34 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../models/account.dart';
 import '../models/category.dart';
 import '../models/transaction.dart';
 
-class NewTransactionScreen extends StatefulWidget {
-  const NewTransactionScreen({
+final _dateFormat = DateFormat('dd/MM/yyyy');
+
+class TransactionFormScreen extends StatefulWidget {
+  const TransactionFormScreen({
     super.key,
     required this.accounts,
     required this.categories,
     required this.onSubmit,
+    this.initial,
   });
 
   final List<Account> accounts;
   final List<Category> categories;
   final Future<void> Function(Transaction) onSubmit;
+  final Transaction? initial;
 
   @override
-  State<NewTransactionScreen> createState() => _NewTransactionScreenState();
+  State<TransactionFormScreen> createState() => _TransactionFormScreenState();
 }
 
-class _NewTransactionScreenState extends State<NewTransactionScreen> {
-  TransactionType _tipo = TransactionType.gasto;
+class _TransactionFormScreenState extends State<TransactionFormScreen> {
+  late TransactionType _tipo;
   String? _accountId;
   String? _accountDestinoId;
   String? _categoryId;
-  final DateTime _fecha = DateTime.now();
+  late DateTime _fecha;
   final _montoController = TextEditingController();
   final _notaController = TextEditingController();
   String? _error;
+
+  bool get _isEditing => widget.initial != null;
 
   List<Category> get _categoriasFiltradas => widget.categories
       .where((c) => c.tipo == (_tipo == TransactionType.ingreso ? 'ingreso' : 'gasto'))
@@ -37,8 +44,19 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.accounts.isNotEmpty) _accountId = widget.accounts.first.id;
-    if (_categoriasFiltradas.isNotEmpty) _categoryId = _categoriasFiltradas.first.id;
+    final initial = widget.initial;
+    _tipo = initial?.tipo ?? TransactionType.gasto;
+    _fecha = initial?.fecha ?? DateTime.now();
+    _accountDestinoId = initial?.accountDestinoId;
+    if (initial != null) {
+      _montoController.text = initial.monto.toString();
+      _notaController.text = initial.nota ?? '';
+      _accountId = initial.accountId;
+      _categoryId = initial.categoryId;
+    } else {
+      if (widget.accounts.isNotEmpty) _accountId = widget.accounts.first.id;
+      if (_categoriasFiltradas.isNotEmpty) _categoryId = _categoriasFiltradas.first.id;
+    }
   }
 
   @override
@@ -69,8 +87,8 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
     }
 
     final transaction = Transaction(
-      id: '',
-      userId: '',
+      id: widget.initial?.id ?? '',
+      userId: widget.initial?.userId ?? '',
       accountId: _accountId!,
       categoryId: _tipo == TransactionType.transferencia ? null : _categoryId,
       accountDestinoId: _tipo == TransactionType.transferencia ? _accountDestinoId : null,
@@ -89,10 +107,20 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
     }
   }
 
+  Future<void> _pickFecha() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _fecha,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) setState(() => _fecha = picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nueva transaccion')),
+      appBar: AppBar(title: Text(_isEditing ? 'Editar transaccion' : 'Nueva transaccion')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -142,6 +170,23 @@ class _NewTransactionScreenState extends State<NewTransactionScreen> {
             ],
             const SizedBox(height: 12),
             TextField(controller: _notaController, decoration: const InputDecoration(labelText: 'Nota (opcional)')),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Text('Fecha: '),
+                    Text(_dateFormat.format(_fecha)),
+                  ],
+                ),
+                TextButton(
+                  key: const Key('fecha_button'),
+                  onPressed: _pickFecha,
+                  child: const Text('Cambiar'),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
             if (_error != null)
               Padding(
