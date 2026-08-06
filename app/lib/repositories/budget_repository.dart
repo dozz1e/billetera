@@ -29,4 +29,8 @@ class BudgetRepository {
         .single();
     return Budget.fromJson(row);
   }
+
+  Future<void> delete(String id) async {
+    await _client.from('budgets').delete().eq('id', id);
+  }
 }

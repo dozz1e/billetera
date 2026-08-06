@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../core/colors.dart';
+import '../core/dialogs.dart';
 import '../models/goal.dart';
 
 final _currency = NumberFormat.currency(
@@ -18,12 +19,14 @@ class GoalDetailScreen extends StatefulWidget {
     required this.ahorrado,
     required this.cuentaNombre,
     required this.onTogglePausado,
+    required this.onDelete,
   });
 
   final Goal goal;
   final double ahorrado;
   final String cuentaNombre;
   final Future<void> Function() onTogglePausado;
+  final Future<void> Function() onDelete;
 
   @override
   State<GoalDetailScreen> createState() => _GoalDetailScreenState();
@@ -43,6 +46,31 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         setState(
           () => _error =
               'No se pudo actualizar la meta. Revisa tu conexion e intenta de nuevo.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _delete() async {
+    final confirmed = await confirmDelete(
+      context,
+      title: 'Eliminar meta',
+      message:
+          'Vas a eliminar "${widget.goal.nombre}". Esta accion no se puede deshacer.',
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _loading = true);
+    try {
+      await widget.onDelete();
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => _error =
+              'No se pudo eliminar la meta. Revisa tu conexion e intenta de nuevo.',
         );
       }
     } finally {
@@ -119,6 +147,15 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
               onPressed: _loading ? null : _toggle,
               child: Text(pausada ? 'Reactivar' : 'Pausar'),
             ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _loading ? null : _delete,
+            icon: Icon(Icons.delete_outline, color: scheme.error),
+            label: Text('Eliminar meta', style: TextStyle(color: scheme.error)),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: scheme.error),
+            ),
+          ),
         ],
       ),
     );

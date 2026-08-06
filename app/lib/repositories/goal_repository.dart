@@ -35,4 +35,8 @@ class GoalRepository {
         .single();
     return Goal.fromJson(row);
   }
+
+  Future<void> delete(String id) async {
+    await _client.from('goals').delete().eq('id', id);
+  }
 }

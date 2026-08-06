@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/colors.dart';
+import '../core/dialogs.dart';
 import '../models/account.dart';
 import '../repositories/account_repository.dart';
 import 'categories_screen.dart';
@@ -41,47 +42,41 @@ class _AccountsScreenState extends State<AccountsScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          insetPadding: kDialogInsetPadding,
           title: Text(account == null ? 'Nueva cuenta' : 'Editar cuenta'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nombreController,
-                decoration: const InputDecoration(labelText: 'Nombre'),
-              ),
-              DropdownButton<String>(
-                value: tipo,
-                items: _tipos
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                    .toList(),
-                onChanged: (v) => setDialogState(() => tipo = v!),
-              ),
-              TextField(
-                controller: saldoController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(labelText: 'Saldo inicial'),
-              ),
-              if (error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
+          content: wideDialogContent([
+            TextField(
+              controller: nombreController,
+              decoration: const InputDecoration(labelText: 'Nombre'),
             ),
-            FilledButton(
-              onPressed: () async {
+            const SizedBox(height: 14),
+            DropdownButtonFormField<String>(
+              initialValue: tipo,
+              decoration: const InputDecoration(labelText: 'Tipo'),
+              items: _tipos
+                  .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                  .toList(),
+              onChanged: (v) => setDialogState(() => tipo = v!),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: saldoController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(labelText: 'Saldo inicial'),
+            ),
+            if (error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            const SizedBox(height: 20),
+            dialogActions(
+              onCancel: () => Navigator.pop(context),
+              onConfirm: () async {
                 final saldo = double.tryParse(saldoController.text) ?? 0;
                 try {
                   if (account == null) {
@@ -112,12 +107,55 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 if (context.mounted) Navigator.pop(context);
                 if (mounted) _reload();
               },
-              child: const Text('Guardar'),
             ),
-          ],
+          ]),
         ),
       ),
     );
+  }
+
+  Future<void> _toggleActivo(Account account) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _repo.update(account.id, {'activo': !account.activo});
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            account.activo
+                ? 'No se pudo desactivar la cuenta. Revisa tu conexion e intenta de nuevo.'
+                : 'No se pudo reactivar la cuenta. Revisa tu conexion e intenta de nuevo.',
+          ),
+        ),
+      );
+      return;
+    }
+    if (mounted) _reload();
+  }
+
+  Future<void> _delete(Account account) async {
+    final confirmed = await confirmDelete(
+      context,
+      title: 'Eliminar cuenta',
+      message:
+          'Vas a eliminar "${account.nombre}". Esta accion no se puede deshacer.',
+    );
+    if (!confirmed || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _repo.delete(account.id);
+    } catch (e) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se pudo eliminar la cuenta. Puede tener transacciones asociadas.',
+          ),
+        ),
+      );
+      return;
+    }
+    if (mounted) _reload();
   }
 
   @override
@@ -177,32 +215,26 @@ class _AccountsScreenState extends State<AccountsScreen> {
                             ),
                             title: Text(a.nombre),
                             subtitle: Text(a.activo ? a.tipo : 'inactiva'),
-                            trailing: a.activo
-                                ? IconButton(
-                                    icon: const Icon(Icons.archive_outlined),
-                                    tooltip: 'Desactivar',
-                                    onPressed: () async {
-                                      final messenger = ScaffoldMessenger.of(
-                                        context,
-                                      );
-                                      try {
-                                        await _repo.update(a.id, {
-                                          'activo': false,
-                                        });
-                                      } catch (e) {
-                                        messenger.showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'No se pudo desactivar la cuenta. Revisa tu conexion e intenta de nuevo.',
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-                                      if (mounted) _reload();
-                                    },
-                                  )
-                                : null,
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    a.activo
+                                        ? Icons.archive_outlined
+                                        : Icons.unarchive_outlined,
+                                  ),
+                                  tooltip: a.activo ? 'Desactivar' : 'Reactivar',
+                                  onPressed: () => _toggleActivo(a),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline),
+                                  tooltip: 'Eliminar',
+                                  color: scheme.error,
+                                  onPressed: () => _delete(a),
+                                ),
+                              ],
+                            ),
                             onTap: () => _openForm(account: a),
                           );
                         },

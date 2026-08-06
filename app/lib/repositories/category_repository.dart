@@ -25,4 +25,8 @@ class CategoryRepository {
         .single();
     return Category.fromJson(row);
   }
+
+  Future<void> delete(String id) async {
+    await _client.from('categories').delete().eq('id', id);
+  }
 }

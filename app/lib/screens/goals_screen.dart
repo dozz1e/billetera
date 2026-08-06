@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/colors.dart';
+import '../core/dialogs.dart';
 import '../logic/balance_calculator.dart';
 import '../logic/goal_state.dart';
 import '../models/account.dart';
@@ -115,72 +116,65 @@ class _GoalsScreenState extends State<GoalsScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          insetPadding: kDialogInsetPadding,
           title: const Text('Nueva meta'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nombreController,
-                decoration: const InputDecoration(labelText: 'Nombre'),
-              ),
-              DropdownButton<String>(
-                value: accountId,
-                items: cuentasActivas
-                    .map(
-                      (a) =>
-                          DropdownMenuItem(value: a.id, child: Text(a.nombre)),
-                    )
-                    .toList(),
-                onChanged: (v) => setDialogState(() => accountId = v!),
-              ),
-              TextField(
-                controller: montoController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(labelText: 'Monto objetivo'),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Fecha objetivo: ${_date.format(fecha)}'),
-                  TextButton(
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: fecha,
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(
-                          const Duration(days: 3650),
-                        ),
-                      );
-                      if (picked != null && context.mounted) {
-                        setDialogState(() => fecha = picked);
-                      }
-                    },
-                    child: const Text('Cambiar'),
-                  ),
-                ],
-              ),
-              if (error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
+          content: wideDialogContent([
+            TextField(
+              controller: nombreController,
+              decoration: const InputDecoration(labelText: 'Nombre'),
             ),
-            FilledButton(
-              onPressed: () async {
+            const SizedBox(height: 14),
+            DropdownButtonFormField<String>(
+              initialValue: accountId,
+              decoration: const InputDecoration(labelText: 'Cuenta'),
+              items: cuentasActivas
+                  .map(
+                    (a) =>
+                        DropdownMenuItem(value: a.id, child: Text(a.nombre)),
+                  )
+                  .toList(),
+              onChanged: (v) => setDialogState(() => accountId = v!),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: montoController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(labelText: 'Monto objetivo'),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Fecha objetivo: ${_date.format(fecha)}'),
+                TextButton(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: fecha,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 3650)),
+                    );
+                    if (picked != null && context.mounted) {
+                      setDialogState(() => fecha = picked);
+                    }
+                  },
+                  child: const Text('Cambiar'),
+                ),
+              ],
+            ),
+            if (error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            const SizedBox(height: 20),
+            dialogActions(
+              onCancel: () => Navigator.pop(context),
+              onConfirm: () async {
                 final monto = double.tryParse(montoController.text) ?? 0;
                 try {
                   await _goalRepo.create(
@@ -204,9 +198,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
                 if (context.mounted) Navigator.pop(context);
                 if (mounted) _reload();
               },
-              child: const Text('Guardar'),
             ),
-          ],
+          ]),
         ),
       ),
     );
@@ -226,6 +219,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                 : 'pausado';
             await _goalRepo.updateEstado(gp.goal.id, nuevoEstado);
           },
+          onDelete: () => _goalRepo.delete(gp.goal.id),
         ),
       ),
     );

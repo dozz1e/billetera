@@ -35,4 +35,8 @@ class AccountRepository {
         .single();
     return Account.fromJson(row);
   }
+
+  Future<void> delete(String id) async {
+    await _client.from('accounts').delete().eq('id', id);
+  }
 }

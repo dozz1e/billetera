@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/colors.dart';
+import '../core/dialogs.dart';
 import '../logic/budget_progress.dart';
 import '../models/budget.dart';
 import '../models/category.dart';
@@ -77,46 +78,39 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          insetPadding: kDialogInsetPadding,
           title: const Text('Presupuesto del mes'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButton<String>(
-                value: categoryId,
-                items: _categories
-                    .map(
-                      (c) =>
-                          DropdownMenuItem(value: c.id, child: Text(c.nombre)),
-                    )
-                    .toList(),
-                onChanged: (v) => setDialogState(() => categoryId = v!),
-              ),
-              TextField(
-                controller: montoController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(labelText: 'Monto limite'),
-              ),
-              if (error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
+          content: wideDialogContent([
+            DropdownButtonFormField<String>(
+              initialValue: categoryId,
+              decoration: const InputDecoration(labelText: 'Categoria'),
+              items: _categories
+                  .map(
+                    (c) =>
+                        DropdownMenuItem(value: c.id, child: Text(c.nombre)),
+                  )
+                  .toList(),
+              onChanged: (v) => setDialogState(() => categoryId = v!),
             ),
-            FilledButton(
-              onPressed: () async {
+            const SizedBox(height: 14),
+            TextField(
+              controller: montoController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(labelText: 'Monto limite'),
+            ),
+            if (error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            const SizedBox(height: 20),
+            dialogActions(
+              onCancel: () => Navigator.pop(context),
+              onConfirm: () async {
                 final monto = double.tryParse(montoController.text) ?? 0;
                 try {
                   await _budgetRepo.upsert(
@@ -138,12 +132,36 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 if (context.mounted) Navigator.pop(context);
                 if (mounted) _reload();
               },
-              child: const Text('Guardar'),
             ),
-          ],
+          ]),
         ),
       ),
     );
+  }
+
+  Future<void> _delete(BudgetProgress progreso, String categoriaNombre) async {
+    final confirmed = await confirmDelete(
+      context,
+      title: 'Eliminar presupuesto',
+      message:
+          'Vas a eliminar el presupuesto de "$categoriaNombre" para este mes.',
+    );
+    if (!confirmed || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _budgetRepo.delete(progreso.budget.id);
+    } catch (e) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se pudo eliminar el presupuesto. Revisa tu conexion e intenta de nuevo.',
+          ),
+        ),
+      );
+      return;
+    }
+    if (mounted) _reload();
   }
 
   @override
@@ -220,17 +238,33 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                     title: Text(categoria.nombre),
                                     subtitle: Padding(
                                       padding: const EdgeInsets.only(top: 6),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(4),
-                                        child: LinearProgressIndicator(
-                                          value: p.porcentaje.clamp(0, 1),
-                                          minHeight: 6,
-                                          color: color,
-                                        ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                            child: LinearProgressIndicator(
+                                              value: p.porcentaje.clamp(0, 1),
+                                              minHeight: 6,
+                                              color: color,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${_currency.format(p.gastado)} / ${_currency.format(p.budget.montoLimite)}',
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    trailing: Text(
-                                      '${_currency.format(p.gastado)} / ${_currency.format(p.budget.montoLimite)}',
+                                    trailing: IconButton(
+                                      icon: const Icon(Icons.delete_outline),
+                                      tooltip: 'Eliminar',
+                                      color: Theme.of(context).colorScheme.error,
+                                      onPressed: () =>
+                                          _delete(p, categoria.nombre),
                                     ),
                                     isThreeLine: false,
                                   );

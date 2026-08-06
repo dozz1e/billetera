@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/dialogs.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -44,35 +46,28 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          insetPadding: kDialogInsetPadding,
           title: const Text('Recuperar contrasena'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Te enviaremos un enlace para restablecer tu contrasena.'),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.emailAddress,
-                autofocus: true,
-                decoration: const InputDecoration(labelText: 'Email'),
-              ),
-              if (dialogError != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    dialogError!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
-                  ),
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
+          content: wideDialogContent([
+            const Text('Te enviaremos un enlace para restablecer tu contrasena.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.emailAddress,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Email'),
             ),
-            FilledButton(
-              onPressed: () {
+            if (dialogError != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                dialogError!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            const SizedBox(height: 20),
+            dialogActions(
+              onCancel: () => Navigator.pop(context),
+              onConfirm: () {
                 final value = controller.text.trim();
                 if (value.isEmpty || !value.contains('@')) {
                   setDialogState(() => dialogError = 'Ingresa un email valido');
@@ -80,9 +75,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 }
                 Navigator.pop(context, value);
               },
-              child: const Text('Enviar'),
+              confirmLabel: 'Enviar',
             ),
-          ],
+          ]),
         ),
       ),
     );
