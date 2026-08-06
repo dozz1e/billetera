@@ -40,10 +40,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     _categoryRepo
         .fetchAll()
         .then((c) {
-          if (mounted)
+          if (mounted) {
             setState(
               () => _categories = c.where((c) => c.tipo == 'gasto').toList(),
             );
+          }
         })
         .onError((e, st) {
           debugPrint('Error al cargar categorias: $e');
@@ -170,13 +171,15 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               body: FutureBuilder<List<BudgetProgress>>(
                 future: _future,
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData)
+                  if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
+                  }
                   final progresos = snapshot.data!;
-                  if (progresos.isEmpty)
+                  if (progresos.isEmpty) {
                     return const Center(
                       child: Text('Sin presupuestos este mes'),
                     );
+                  }
                   return ListView(
                     padding: const EdgeInsets.all(16),
                     children: [

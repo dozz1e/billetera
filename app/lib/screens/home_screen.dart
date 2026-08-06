@@ -106,14 +106,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Billetera')),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'home_fab',
         onPressed: _openNewTransaction,
         child: const Icon(Icons.add),
       ),
       body: FutureBuilder<(List<Account>, List<Transaction>)>(
         future: _future,
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
           final (accounts, transactions) = snapshot.data!;
           final total = calculateTotalBalance(
             accounts: accounts,

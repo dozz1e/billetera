@@ -154,8 +154,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
                           const Duration(days: 3650),
                         ),
                       );
-                      if (picked != null && context.mounted)
+                      if (picked != null && context.mounted) {
                         setDialogState(() => fecha = picked);
+                      }
                     },
                     child: const Text('Cambiar'),
                   ),
@@ -233,8 +234,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
   Widget _lista(List<GoalWithProgress> metas, String estado) {
     final filtradas = metas.where((m) => m.goal.estado == estado).toList();
-    if (filtradas.isEmpty)
+    if (filtradas.isEmpty) {
       return const Center(child: Text('Sin metas en este estado'));
+    }
     final primary = Theme.of(context).colorScheme.primary;
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -294,8 +296,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
       body: FutureBuilder<List<GoalWithProgress>>(
         future: _future,
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
           final metas = snapshot.data!;
           return DefaultTabController(
             length: 3,

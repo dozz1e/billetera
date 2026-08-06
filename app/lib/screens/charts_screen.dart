@@ -48,8 +48,9 @@ class _ChartsScreenState extends State<ChartsScreen> {
       body: FutureBuilder<(List<Account>, List<Category>, List<Transaction>)>(
         future: _future,
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
           final (accounts, categories, transactions) = snapshot.data!;
           final now = DateTime.now();
           final categoryNames = {for (final c in categories) c.id: c.nombre};
@@ -135,8 +136,9 @@ class _ChartsScreenState extends State<ChartsScreen> {
                           showTitles: true,
                           getTitlesWidget: (value, meta) {
                             final i = value.toInt();
-                            if (i < 0 || i >= mensual.length)
+                            if (i < 0 || i >= mensual.length) {
                               return const SizedBox.shrink();
+                            }
                             return Text(
                               '${mensual[i].month}/${mensual[i].year % 100}',
                             );
@@ -196,8 +198,9 @@ class _ChartsScreenState extends State<ChartsScreen> {
                           showTitles: true,
                           getTitlesWidget: (value, meta) {
                             final i = value.toInt();
-                            if (i < 0 || i >= accounts.length)
+                            if (i < 0 || i >= accounts.length) {
                               return const SizedBox.shrink();
+                            }
                             return Text(
                               accounts[i].nombre,
                               style: const TextStyle(fontSize: 10),

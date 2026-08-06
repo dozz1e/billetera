@@ -137,17 +137,20 @@ class _AccountsScreenState extends State<AccountsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'accounts_fab',
         onPressed: () => _openForm(),
         child: const Icon(Icons.add),
       ),
       body: FutureBuilder<List<Account>>(
         future: _future,
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
           final accounts = snapshot.data!;
-          if (accounts.isEmpty)
+          if (accounts.isEmpty) {
             return const Center(child: Text('Sin cuentas todavia'));
+          }
           final scheme = Theme.of(context).colorScheme;
           return ListView(
             padding: const EdgeInsets.all(16),

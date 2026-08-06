@@ -39,11 +39,12 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       await widget.onTogglePausado();
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(
           () => _error =
               'No se pudo actualizar la meta. Revisa tu conexion e intenta de nuevo.',
         );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }

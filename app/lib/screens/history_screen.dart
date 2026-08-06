@@ -150,11 +150,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
             child: FutureBuilder<List<Transaction>>(
               future: _future,
               builder: (context, snapshot) {
-                if (!snapshot.hasData)
+                if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
+                }
                 final transactions = snapshot.data!;
-                if (transactions.isEmpty)
+                if (transactions.isEmpty) {
                   return const Center(child: Text('Sin transacciones'));
+                }
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   children: [

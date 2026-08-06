@@ -104,17 +104,20 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Categorias')),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'categories_fab',
         onPressed: _openForm,
         child: const Icon(Icons.add),
       ),
       body: FutureBuilder<List<Category>>(
         future: _future,
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
           final categories = snapshot.data!;
-          if (categories.isEmpty)
+          if (categories.isEmpty) {
             return const Center(child: Text('Sin categorias todavia'));
+          }
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
