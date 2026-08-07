@@ -20,7 +20,6 @@ class AccountsScreen extends StatefulWidget {
 class _AccountsScreenState extends State<AccountsScreen> {
   final _repo = AccountRepository(Supabase.instance.client);
   late Future<List<Account>> _future;
-  List<Account> _accountsSnapshot = [];
 
   @override
   void initState() {
@@ -29,9 +28,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 
   void _reload() => setState(() {
-    _future = _repo.fetchAll()..then((a) {
-      if (mounted) setState(() => _accountsSnapshot = a);
-    });
+    _future = _repo.fetchAll();
   });
 
   Future<void> _openForm({Account? account}) async {
@@ -171,12 +168,16 @@ class _AccountsScreenState extends State<AccountsScreen> {
           IconButton(
             icon: const Icon(Icons.notifications_active_outlined),
             tooltip: 'Google Pay',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => GooglePaySettingsScreen(accounts: _accountsSnapshot),
-              ),
-            ),
+            onPressed: () async {
+              final accounts = await _repo.fetchAll();
+              if (!context.mounted) return;
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GooglePaySettingsScreen(accounts: accounts),
+                ),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.label_outline),

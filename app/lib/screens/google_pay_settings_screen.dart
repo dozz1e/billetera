@@ -25,7 +25,9 @@ class _GooglePaySettingsScreenState extends State<GooglePaySettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedAccountId = _settings.defaultAccountId;
+    final savedAccountId = _settings.defaultAccountId;
+    final activeAccountIds = widget.accounts.where((a) => a.activo).map((a) => a.id).toSet();
+    _selectedAccountId = activeAccountIds.contains(savedAccountId) ? savedAccountId : null;
     _refreshPermission();
   }
 
