@@ -26,6 +26,19 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Required by the notification_listener_service plugin (Google Pay
+             integration) to read Google Wallet notifications. Class name and
+             intent-filter action copied verbatim from the plugin's own
+             example app manifest — see task-7-report.md for verification. -->
+        <service
+            android:name="notification.listener.service.NotificationListener"
+            android:label="notifications"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService"/>
+            </intent-filter>
+        </service>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

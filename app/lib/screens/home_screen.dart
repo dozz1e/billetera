@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -9,6 +10,9 @@ import '../models/transaction.dart';
 import '../repositories/account_repository.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/transaction_repository.dart';
+import '../services/google_pay_listener_service.dart';
+import '../services/google_pay_plugin_notification_source.dart';
+import '../services/google_pay_settings.dart';
 import '../services/outbox_service.dart';
 import 'transaction_form_screen.dart';
 
@@ -33,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _outbox = OutboxService(
     TransactionRepository(Supabase.instance.client),
   );
+  GooglePayListenerService? _googlePayListener;
 
   late Future<(List<Account>, List<Transaction>)> _future;
 
@@ -40,6 +45,19 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _future = _load();
+    // Started only once categories are available (needed to resolve the
+    // suggested category id) — non-fatal if this fails, same pattern as the
+    // account/category prefetch in HistoryScreen.initState.
+    _categoryRepo.fetchAll().then((categories) {
+      if (!mounted) return;
+      _googlePayListener = GooglePayListenerService(
+        PluginGooglePayNotificationSource(),
+        Hive.box<Map>(googlePayPendingBoxName),
+        categories,
+      )..start();
+    }).onError((e, st) {
+      debugPrint('HomeScreen: failed to start Google Pay listener: $e');
+    });
   }
 
   @override
@@ -49,6 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // this state), so without this the OutboxService's connectivity
     // listener would leak and accumulate across logout/login cycles.
     _outbox.dispose();
+    _googlePayListener?.dispose();
     super.dispose();
   }
 
