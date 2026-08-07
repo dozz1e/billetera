@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -6,10 +7,12 @@ import '../core/colors.dart';
 import '../core/dialogs.dart';
 import '../models/account.dart';
 import '../models/category.dart';
+import '../models/pending_google_pay_record.dart';
 import '../models/transaction.dart';
 import '../repositories/account_repository.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/transaction_repository.dart';
+import '../services/google_pay_settings.dart';
 import 'transaction_form_screen.dart';
 
 final _currency = NumberFormat.currency(
@@ -30,9 +33,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
   final _accountRepo = AccountRepository(Supabase.instance.client);
   final _categoryRepo = CategoryRepository(Supabase.instance.client);
   final _transactionRepo = TransactionRepository(Supabase.instance.client);
+  final _pendingBox = Hive.box<Map>(googlePayPendingBoxName);
+  late final _googlePaySettings = GooglePaySettings(Hive.box(googlePaySettingsBoxName));
 
   List<Account> _accounts = [];
   List<Category> _categories = [];
+  // Tracks whether the accounts fetch below has resolved (success or
+  // failure), so the Google Pay card knows when it's safe to treat
+  // `_accounts` as an authoritative, up-to-date list rather than the
+  // still-empty initial value.
+  bool _accountsLoaded = false;
   String? _accountFilter;
   String? _categoryFilter;
   TransactionType? _tipoFilter;
@@ -50,7 +60,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _accountRepo
         .fetchAll()
         .then((a) {
-          if (mounted) setState(() => _accounts = a);
+          if (mounted) {
+            setState(() {
+              _accounts = a;
+              _accountsLoaded = true;
+            });
+          }
         })
         .onError((e, st) {
           debugPrint('HistoryScreen: failed to load accounts: $e');
@@ -116,12 +131,129 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (mounted) _reload();
   }
 
+  // The saved default account id can go stale the same way the previously
+  // selected account could go stale in GooglePaySettingsScreen (Task 8): the
+  // account may since have been deactivated or deleted. Once we have a fresh
+  // accounts list, only treat the saved id as usable if it still points at
+  // an active account. Before that fetch resolves, `_accounts` is empty and
+  // would otherwise look like "no active accounts", so we fall back to
+  // trusting the saved id until we know better rather than blocking the
+  // feature during the loading window.
+  String? get _validDefaultAccountId {
+    final accountId = _googlePaySettings.defaultAccountId;
+    if (accountId == null) return null;
+    if (!_accountsLoaded) return accountId;
+    final isActive = _accounts.any((a) => a.id == accountId && a.activo);
+    return isActive ? accountId : null;
+  }
+
+  Future<void> _insertPending(PendingGooglePayRecord record) async {
+    final accountId = _validDefaultAccountId;
+    if (accountId == null) return;
+
+    await _transactionRepo.create(
+      Transaction(
+        id: '',
+        userId: '',
+        accountId: accountId,
+        categoryId: record.categoriaSugeridaId,
+        tipo: TransactionType.gasto,
+        monto: record.monto,
+        fecha: record.fecha,
+        nota: record.comercioTexto,
+      ),
+    );
+    await _pendingBox.delete(record.id);
+    if (mounted) _reload();
+  }
+
+  Future<void> _discardPending(PendingGooglePayRecord record) async {
+    await _pendingBox.put(record.id, record.copyWith(estado: 'descartado').toMap());
+  }
+
+  Future<void> _insertAllPending(List<PendingGooglePayRecord> records) async {
+    for (final record in records) {
+      await _insertPending(record);
+    }
+  }
+
+  Widget _buildGooglePayCard() {
+    return ValueListenableBuilder<Box<Map>>(
+      valueListenable: _pendingBox.listenable(),
+      builder: (context, box, _) {
+        final pendientes = box.values
+            .map((m) => PendingGooglePayRecord.fromMap(m))
+            .where((r) => r.estado == 'pendiente')
+            .toList();
+        if (pendientes.isEmpty) return const SizedBox.shrink();
+
+        final accountId = _validDefaultAccountId;
+
+        return Card(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Registros de Google Pay',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text('${pendientes.length} registros pendientes de insertar'),
+                if (accountId == null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Configura una cuenta por defecto para Google Pay en Cuentas.',
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                for (final record in pendientes)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(_currency.format(record.monto)),
+                    subtitle: Text(record.comercioTexto),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.check),
+                          tooltip: 'Insertar',
+                          onPressed: accountId == null ? null : () => _insertPending(record),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          tooltip: 'Descartar',
+                          onPressed: () => _discardPending(record),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (accountId != null)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => _insertAllPending(pendientes),
+                      child: const Text('Insertar todos'),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Historial')),
       body: Column(
         children: [
+          _buildGooglePayCard(),
           Card(
             margin: const EdgeInsets.all(16),
             child: Padding(
