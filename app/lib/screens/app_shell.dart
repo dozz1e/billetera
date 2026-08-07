@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.tabs});
 
-  /// One widget per bottom-nav tab, in order: Home, Cuentas, Presupuestos, Graficas, Historial.
+  /// One widget per bottom-nav tab, in order: Home, Cuentas, Presupuestos, Graficas, Historial, Deudas.
   final List<Widget> tabs;
 
   @override
@@ -26,6 +26,7 @@ class _AppShellState extends State<AppShell> {
           NavigationDestination(icon: Icon(Icons.pie_chart_outline), label: 'Presupuestos'),
           NavigationDestination(icon: Icon(Icons.bar_chart), label: 'Graficas'),
           NavigationDestination(icon: Icon(Icons.history), label: 'Historial'),
+          NavigationDestination(icon: Icon(Icons.people_outline), label: 'Deudas'),
         ],
       ),
     );
