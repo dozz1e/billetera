@@ -6,6 +6,7 @@ import '../core/dialogs.dart';
 import '../models/account.dart';
 import '../repositories/account_repository.dart';
 import 'categories_screen.dart';
+import 'google_pay_settings_screen.dart';
 
 const _tipos = ['efectivo', 'banco', 'credito', 'billetera_digital'];
 
@@ -19,15 +20,18 @@ class AccountsScreen extends StatefulWidget {
 class _AccountsScreenState extends State<AccountsScreen> {
   final _repo = AccountRepository(Supabase.instance.client);
   late Future<List<Account>> _future;
+  List<Account> _accountsSnapshot = [];
 
   @override
   void initState() {
     super.initState();
-    _future = _repo.fetchAll();
+    _reload();
   }
 
   void _reload() => setState(() {
-    _future = _repo.fetchAll();
+    _future = _repo.fetchAll()..then((a) {
+      if (mounted) setState(() => _accountsSnapshot = a);
+    });
   });
 
   Future<void> _openForm({Account? account}) async {
@@ -164,6 +168,16 @@ class _AccountsScreenState extends State<AccountsScreen> {
       appBar: AppBar(
         title: const Text('Cuentas'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_active_outlined),
+            tooltip: 'Google Pay',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => GooglePaySettingsScreen(accounts: _accountsSnapshot),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.label_outline),
             tooltip: 'Categorias',
