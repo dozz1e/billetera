@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 
 /// Fixed semantic colors that carry meaning across the app (transaction
-/// type, account type, goal state), independent of the Material color
-/// scheme generated from theme.dart's seed. Tuned for contrast against the
-/// dark scaffold (#121212) and card surface (#1E1E1E).
+/// type, account type, goal state, debt state), independent of the Material
+/// color scheme generated from theme.dart's seed. Tuned for contrast against
+/// the dark scaffold (#121212) and card surface (#1E1E1E).
 class AppColors {
   const AppColors._();
 

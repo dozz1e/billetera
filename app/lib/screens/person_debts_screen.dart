@@ -101,6 +101,14 @@ class _PersonDebtsScreenState extends State<PersonDebtsScreen> {
               onCancel: () => Navigator.pop(context),
               onConfirm: () async {
                 final monto = double.tryParse(montoController.text) ?? 0;
+                if (motivoController.text.trim().isEmpty) {
+                  setDialogState(() => error = 'Ingresa un motivo.');
+                  return;
+                }
+                if (monto <= 0) {
+                  setDialogState(() => error = 'Ingresa un monto valido.');
+                  return;
+                }
                 try {
                   if (debt == null) {
                     await _debtRepo.create(
@@ -222,7 +230,7 @@ class _PersonDebtsScreenState extends State<PersonDebtsScreen> {
                             ),
                             title: Text(debt.motivo),
                             subtitle: Text(
-                              '${_currency.format(debt.monto)} · ${_date.format(debt.fecha)}',
+                              '${_currency.format(debt.monto)} · ${_date.format(debt.fecha)} · ${debt.estado}',
                             ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,

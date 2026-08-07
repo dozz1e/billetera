@@ -72,6 +72,10 @@ class _DebtsScreenState extends State<DebtsScreen> {
             dialogActions(
               onCancel: () => Navigator.pop(context),
               onConfirm: () async {
+                if (nombreController.text.trim().isEmpty) {
+                  setDialogState(() => error = 'Ingresa un nombre.');
+                  return;
+                }
                 try {
                   await _personRepo.create(
                     Person(
