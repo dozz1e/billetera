@@ -76,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // rethrowing (offline-first by design, see outbox_service.dart).
           // So unlike the old direct _transactionRepo.create(t) call, a
           // network failure here will NOT reach
-          // NewTransactionScreen._submit()'s error-surfacing catch: it
+          // TransactionFormScreen._submit()'s error-surfacing catch: it
           // queues silently and the form closes normally below, same as a
           // successful write. The pendingCount check after this screen
           // closes is what tells the user their transaction was queued

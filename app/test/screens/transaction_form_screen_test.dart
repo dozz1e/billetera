@@ -75,9 +75,37 @@ void main() {
     ));
 
     expect(find.text('Editar transaccion'), findsOneWidget);
-    expect(find.text('2500.0'), findsOneWidget);
+    expect(find.text('2500'), findsOneWidget);
     expect(find.text('Super'), findsOneWidget);
     expect(find.text('10/05/2026'), findsOneWidget);
+    expect(find.text('Efectivo'), findsOneWidget);
+    expect(find.text('Comida'), findsOneWidget);
+  });
+
+  testWidgets('prefills transferencia fields from initial transaction', (tester) async {
+    final initial = Transaction(
+      id: 't2',
+      userId: 'u1',
+      accountId: 'a2',
+      accountDestinoId: 'a1',
+      tipo: TransactionType.transferencia,
+      monto: 500,
+      fecha: DateTime(2026, 3, 1),
+    );
+
+    await tester.pumpWidget(MaterialApp(
+      home: TransactionFormScreen(
+        accounts: _accounts,
+        categories: _categories,
+        onSubmit: (_) async {},
+        initial: initial,
+      ),
+    ));
+
+    expect(find.text('Categoria'), findsNothing);
+    expect(find.text('Cuenta destino'), findsOneWidget);
+    expect(find.text('Efectivo'), findsOneWidget);
+    expect(find.text('Banco'), findsOneWidget);
   });
 
   testWidgets('changing the date via the date picker updates the submitted transaction', (tester) async {

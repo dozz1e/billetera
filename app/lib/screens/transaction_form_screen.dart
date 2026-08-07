@@ -49,7 +49,9 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     _fecha = initial?.fecha ?? DateTime.now();
     _accountDestinoId = initial?.accountDestinoId;
     if (initial != null) {
-      _montoController.text = initial.monto.toString();
+      _montoController.text = initial.monto == initial.monto.roundToDouble()
+          ? initial.monto.toStringAsFixed(0)
+          : initial.monto.toString();
       _notaController.text = initial.nota ?? '';
       _accountId = initial.accountId;
       _categoryId = initial.categoryId;
@@ -114,7 +116,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
-    if (picked != null) setState(() => _fecha = picked);
+    if (picked != null && mounted) setState(() => _fecha = picked);
   }
 
   @override

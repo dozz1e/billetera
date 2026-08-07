@@ -3,13 +3,13 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/colors.dart';
+import '../core/dialogs.dart';
 import '../models/account.dart';
 import '../models/category.dart';
 import '../models/transaction.dart';
 import '../repositories/account_repository.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/transaction_repository.dart';
-import '../core/dialogs.dart';
 import 'transaction_form_screen.dart';
 
 final _currency = NumberFormat.currency(
@@ -96,7 +96,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final confirmed = await confirmDelete(
       context,
       title: 'Eliminar transaccion',
-      message: 'Vas a eliminar esta transaccion. Esta accion no se puede deshacer.',
+      message:
+          'Vas a eliminar la transaccion de ${_currency.format(t.monto)} del ${DateFormat('dd/MM/yyyy').format(t.fecha)}. Esta accion no se puede deshacer.',
     );
     if (!confirmed || !mounted) return;
 
@@ -221,11 +222,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     ),
                                   ),
                                   title: Text(_currency.format(t.monto)),
-                                  subtitle: Text(t.nota ?? t.tipo.name),
+                                  subtitle: Text(
+                                    '${DateFormat('dd/MM/yyyy').format(t.fecha)} · ${t.nota ?? t.tipo.name}',
+                                  ),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text(DateFormat('dd/MM/yyyy').format(t.fecha)),
                                       IconButton(
                                         icon: const Icon(Icons.edit_outlined),
                                         tooltip: 'Editar',

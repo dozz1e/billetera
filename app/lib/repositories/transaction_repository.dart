@@ -44,6 +44,10 @@ class TransactionRepository {
     return Transaction.fromJson(row);
   }
 
+  /// [changes] must be the transaction's full field set (e.g.
+  /// `toInsertJson()`), not a partial patch — the `transferencia_shape` CHECK
+  /// constraint requires `category_id`/`account_destino_id` to stay
+  /// consistent with `tipo` on every write.
   Future<Transaction> update(String id, Map<String, dynamic> changes) async {
     final row = await _client
         .from('transactions')
