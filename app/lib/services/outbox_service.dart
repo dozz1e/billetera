@@ -6,8 +6,9 @@ import 'package:uuid/uuid.dart';
 
 import '../models/transaction.dart';
 import '../repositories/transaction_repository.dart';
+import 'recurring_payment_service.dart';
 
-class OutboxService {
+class OutboxService implements TransactionSink {
   OutboxService(this._repository) {
     _box = Hive.box<Map>('outbox');
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
@@ -23,6 +24,7 @@ class OutboxService {
 
   int get pendingCount => _box.length;
 
+  @override
   Future<void> create(Transaction transaction) async {
     try {
       await _repository.create(transaction);

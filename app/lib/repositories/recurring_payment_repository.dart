@@ -1,8 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/recurring_payment.dart';
+import '../services/recurring_payment_service.dart';
 
-class RecurringPaymentRepository {
+class RecurringPaymentRepository implements RecurringPaymentSource {
   RecurringPaymentRepository(this._client);
 
   final SupabaseClient _client;
@@ -17,6 +18,7 @@ class RecurringPaymentRepository {
         .toList();
   }
 
+  @override
   Future<List<RecurringPayment>> fetchActive() async {
     final rows = await _client
         .from('recurring_payments')
@@ -47,6 +49,7 @@ class RecurringPaymentRepository {
         .eq('id', id);
   }
 
+  @override
   Future<void> updateUltimaGenerada(String id, DateTime fecha) async {
     await _client
         .from('recurring_payments')
