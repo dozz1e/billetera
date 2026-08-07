@@ -1,4 +1,3 @@
-// app/test/logic/google_pay_category_matcher_test.dart
 import 'package:billetera/logic/google_pay_category_matcher.dart';
 import 'package:billetera/models/category.dart';
 import 'package:flutter_test/flutter_test.dart';

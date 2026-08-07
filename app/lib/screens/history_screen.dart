@@ -38,11 +38,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   List<Account> _accounts = [];
   List<Category> _categories = [];
-  // Tracks whether the accounts fetch below has resolved (success or
-  // failure), so the Google Pay card knows when it's safe to treat
-  // `_accounts` as an authoritative, up-to-date list rather than the
-  // still-empty initial value.
-  bool _accountsLoaded = false;
   String? _accountFilter;
   String? _categoryFilter;
   TransactionType? _tipoFilter;
@@ -63,7 +58,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
           if (mounted) {
             setState(() {
               _accounts = a;
-              _accountsLoaded = true;
             });
           }
         })
@@ -131,27 +125,60 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (mounted) _reload();
   }
 
-  // The saved default account id can go stale the same way the previously
-  // selected account could go stale in GooglePaySettingsScreen (Task 8): the
-  // account may since have been deactivated or deleted. Once we have a fresh
-  // accounts list, only treat the saved id as usable if it still points at
-  // an active account. Before that fetch resolves, `_accounts` is empty and
-  // would otherwise look like "no active accounts", so we fall back to
-  // trusting the saved id until we know better rather than blocking the
-  // feature during the loading window.
-  String? get _validDefaultAccountId {
-    final accountId = _googlePaySettings.defaultAccountId;
-    if (accountId == null) return null;
-    if (!_accountsLoaded) return accountId;
-    final isActive = _accounts.any((a) => a.id == accountId && a.activo);
-    return isActive ? accountId : null;
-  }
+  // Whether the Google Pay card should even offer inserting at all — purely
+  // "is anything configured", not "is that account still valid". Whether the
+  // configured account is still an active account is checked with a fresh
+  // fetch inside _insertPendingCore, on tap, rather than against this
+  // screen's `_accounts` snapshot: `_accounts` is fetched once in initState
+  // and AppShell keeps HistoryScreen alive in an IndexedStack, so initState
+  // never runs again on tab switch — a stale `_accounts` here would
+  // otherwise permanently miss accounts created/configured after app start.
+  String? get _defaultAccountId => _googlePaySettings.defaultAccountId;
 
-  Future<void> _insertPending(PendingGooglePayRecord record) async {
-    final accountId = _validDefaultAccountId;
+  // Inserts a single pending record without reloading the transaction list
+  // afterwards — used by both _insertPending (which reloads immediately) and
+  // _insertAllPending (which reloads once after the whole batch, instead of
+  // once per record).
+  Future<void> _insertPendingCore(PendingGooglePayRecord record) async {
+    final accountId = _defaultAccountId;
     if (accountId == null) return;
 
     final messenger = ScaffoldMessenger.of(context);
+
+    if (record.categoriaSugeridaId == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            "No se pudo determinar una categoría para este registro. Revisa que la categoría 'Otros gastos' exista en Categorias.",
+          ),
+        ),
+      );
+      return;
+    }
+
+    List<Account> freshAccounts;
+    try {
+      freshAccounts = await _accountRepo.fetchAll();
+    } catch (e) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo insertar la transaccion. Revisa tu conexion e intenta de nuevo.'),
+        ),
+      );
+      return;
+    }
+    final isActive = freshAccounts.any((a) => a.id == accountId && a.activo);
+    if (!isActive) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'La cuenta configurada para Google Pay ya no está disponible. Actualízala en Cuentas.',
+          ),
+        ),
+      );
+      return;
+    }
+
     try {
       await _transactionRepo.create(
         Transaction(
@@ -173,7 +200,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
       );
       return;
     }
-    await _pendingBox.delete(record.id);
+    // Keep the record (instead of deleting it) so its key still satisfies
+    // GooglePayListenerService's dedupe check (`_box.containsKey`) — if
+    // Android re-posts the same notification, it won't be re-inserted as a
+    // new pending record. The card's `estado == 'pendiente'` filter already
+    // hides anything not pending, so this doesn't change what's shown.
+    await _pendingBox.put(record.id, record.copyWith(estado: 'insertado').toMap());
+  }
+
+  Future<void> _insertPending(PendingGooglePayRecord record) async {
+    await _insertPendingCore(record);
     if (mounted) _reload();
   }
 
@@ -183,8 +219,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _insertAllPending(List<PendingGooglePayRecord> records) async {
     for (final record in records) {
-      await _insertPending(record);
+      await _insertPendingCore(record);
     }
+    if (mounted) _reload();
   }
 
   Widget _buildGooglePayCard() {
@@ -197,7 +234,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             .toList();
         if (pendientes.isEmpty) return const SizedBox.shrink();
 
-        final accountId = _validDefaultAccountId;
+        final accountId = _defaultAccountId;
 
         return Card(
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),

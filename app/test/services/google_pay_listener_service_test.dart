@@ -10,6 +10,11 @@ import 'package:hive/hive.dart';
 class _FakeSource implements GooglePayNotificationSource {
   final _controller = StreamController<RawNotification>();
 
+  /// Canned "already active" notifications returned by
+  /// [getActiveNotifications], simulating notifications still visible in the
+  /// shade when `start()` is called (e.g. app was closed when they arrived).
+  List<RawNotification> activeNotifications = const [];
+
   @override
   Stream<RawNotification> get events => _controller.stream;
 
@@ -18,6 +23,9 @@ class _FakeSource implements GooglePayNotificationSource {
 
   @override
   Future<void> requestPermission() async {}
+
+  @override
+  Future<List<RawNotification>> getActiveNotifications() async => activeNotifications;
 
   void emit(RawNotification notification) => _controller.add(notification);
 
@@ -41,7 +49,7 @@ void main() {
     box = await Hive.openBox<Map>('google_pay_pending_test');
     source = _FakeSource();
     service = GooglePayListenerService(source, box, _categories);
-    service.start();
+    await service.start();
   });
 
   tearDown(() async {
@@ -112,5 +120,32 @@ void main() {
 
     expect(box.length, 1);
     expect(box.get('notif-4')!['estado'], 'descartado');
+  });
+
+  test('drains notifications already active in the shade on start()', () async {
+    // Independent source/service pair: the shared `source`/`service` from
+    // setUp already had start() called against an empty active list, so
+    // this exercises the drain in isolation, reusing the same Hive box.
+    final activeSource = _FakeSource()
+      ..activeNotifications = [
+        const RawNotification(
+          packageName: googleWalletPackageName,
+          notificationKey: 'notif-active-1',
+          title: 'Google Wallet',
+          text: 'Pagaste \$3.200,00 en FARMACIA CRUZ VERDE',
+        ),
+      ];
+    final activeService = GooglePayListenerService(activeSource, box, _categories);
+
+    await activeService.start();
+
+    expect(box.containsKey('notif-active-1'), isTrue);
+    final stored = box.get('notif-active-1')!;
+    expect(stored['monto'], 3200.0);
+    expect(stored['comercio_texto'], 'FARMACIA CRUZ VERDE');
+    expect(stored['estado'], 'pendiente');
+
+    activeService.dispose();
+    await activeSource.close();
   });
 }

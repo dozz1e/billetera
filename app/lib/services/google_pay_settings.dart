@@ -1,4 +1,3 @@
-// app/lib/services/google_pay_settings.dart
 import 'package:hive/hive.dart';
 
 const googlePayPendingBoxName = 'google_pay_pending';

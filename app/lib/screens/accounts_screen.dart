@@ -169,7 +169,18 @@ class _AccountsScreenState extends State<AccountsScreen> {
             icon: const Icon(Icons.notifications_active_outlined),
             tooltip: 'Google Pay',
             onPressed: () async {
-              final accounts = await _repo.fetchAll();
+              final messenger = ScaffoldMessenger.of(context);
+              List<Account> accounts;
+              try {
+                accounts = await _repo.fetchAll();
+              } catch (e) {
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('No se pudo cargar las cuentas. Revisa tu conexion e intenta de nuevo.'),
+                  ),
+                );
+                return;
+              }
               if (!context.mounted) return;
               await Navigator.push(
                 context,

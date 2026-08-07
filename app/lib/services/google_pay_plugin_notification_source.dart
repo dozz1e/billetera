@@ -1,3 +1,4 @@
+import 'package:notification_listener_service/notification_event.dart';
 import 'package:notification_listener_service/notification_listener_service.dart';
 
 import 'google_pay_notification_source.dart';
@@ -21,24 +22,41 @@ class PluginGooglePayNotificationSource implements GooglePayNotificationSource {
       // events (Android's hasRemoved flag distinguishes them). We only ever
       // want to record from a posted notification, so drop removals here.
       .where((event) => !event.hasRemoved)
-      .map(
-        (event) => RawNotification(
-          packageName: event.packageName,
-          // The plugin's ServiceNotificationEvent has no `uniqueId` field —
-          // its unique identifier is the int `id` (Android's notification
-          // id, defaulted to 0 by the plugin if the platform side omits it).
-          // `id` alone is app-assigned (not OS-assigned) and can be reused
-          // across genuinely different notifications, so it's combined with
-          // a signature of the title/content to shrink the collision window.
-          notificationKey: '${event.id}-${event.title.hashCode}-${event.content.hashCode}',
-          title: event.title,
-          text: event.content,
-        ),
-      );
+      .map(_toRawNotification);
 
   @override
   Future<bool> hasPermission() => NotificationListenerService.isPermissionGranted();
 
   @override
   Future<void> requestPermission() => NotificationListenerService.requestPermission();
+
+  // Drains notifications that are currently posted and still visible in the
+  // notification shade — covers the case where a Google Wallet payment
+  // happened while the app wasn't running (and thus wasn't subscribed to
+  // `events` yet). Verified against the real, installed plugin API
+  // (`notification_listener_service-1.0.0`): backed on the native side by
+  // `NotificationListener.getActiveNotificationData()`. Does not surface
+  // notifications the user already dismissed before opening the app.
+  @override
+  Future<List<RawNotification>> getActiveNotifications() async {
+    final active = await NotificationListenerService.getActiveNotifications();
+    return active
+        .where((event) => event.packageName == googleWalletPackageName)
+        .where((event) => !event.hasRemoved)
+        .map(_toRawNotification)
+        .toList();
+  }
+
+  RawNotification _toRawNotification(ServiceNotificationEvent event) => RawNotification(
+    packageName: event.packageName,
+    // The plugin's ServiceNotificationEvent has no `uniqueId` field —
+    // its unique identifier is the int `id` (Android's notification
+    // id, defaulted to 0 by the plugin if the platform side omits it).
+    // `id` alone is app-assigned (not OS-assigned) and can be reused
+    // across genuinely different notifications, so it's combined with
+    // a signature of the title/content to shrink the collision window.
+    notificationKey: '${event.id}-${event.title.hashCode}-${event.content.hashCode}',
+    title: event.title,
+    text: event.content,
+  );
 }

@@ -28,4 +28,12 @@ abstract class GooglePayNotificationSource {
   Stream<RawNotification> get events;
   Future<bool> hasPermission();
   Future<void> requestPermission();
+
+  /// Notifications currently posted and still visible (not yet dismissed) at
+  /// call time — used to drain anything the user received while the app
+  /// wasn't running and the live `events` stream wasn't listening yet. Does
+  /// NOT cover notifications the user already dismissed before opening the
+  /// app; that gap is a documented, accepted limitation (see the design
+  /// spec's Riesgos section).
+  Future<List<RawNotification>> getActiveNotifications();
 }

@@ -16,8 +16,19 @@ class GooglePayListenerService {
   final List<Category> _categories;
   StreamSubscription<RawNotification>? _subscription;
 
-  void start() {
+  // Subscribes to live notifications first, then drains anything already
+  // posted and visible in the shade (e.g. a payment made while the app was
+  // fully closed). Draining after subscribing avoids a gap where a
+  // notification posted between the two steps could be missed entirely;
+  // `_handle`'s dedupe check (via `_box.containsKey`) makes it safe either
+  // way if the same notification shows up in both the drain and the live
+  // stream.
+  Future<void> start() async {
     _subscription = _source.events.listen(_handle);
+    final active = await _source.getActiveNotifications();
+    for (final notification in active) {
+      _handle(notification);
+    }
   }
 
   void _handle(RawNotification notification) {

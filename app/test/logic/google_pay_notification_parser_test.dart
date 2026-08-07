@@ -1,4 +1,3 @@
-// app/test/logic/google_pay_notification_parser_test.dart
 import 'package:billetera/logic/google_pay_notification_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 

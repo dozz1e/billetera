@@ -1,4 +1,3 @@
-// app/test/models/pending_google_pay_record_test.dart
 import 'package:billetera/models/pending_google_pay_record.dart';
 import 'package:flutter_test/flutter_test.dart';
 
