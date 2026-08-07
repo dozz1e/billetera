@@ -3,12 +3,14 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/colors.dart';
+import '../core/dialogs.dart';
 import '../models/account.dart';
 import '../models/category.dart';
 import '../models/transaction.dart';
 import '../repositories/account_repository.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/transaction_repository.dart';
+import 'transaction_form_screen.dart';
 
 final _currency = NumberFormat.currency(
   locale: 'es_CL',
@@ -71,6 +73,47 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void _reload() => setState(() {
     _future = _load();
   });
+
+  Future<void> _openEdit(Transaction t) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransactionFormScreen(
+          accounts: _accounts,
+          categories: _categories,
+          initial: t,
+          onSubmit: (updated) async {
+            await _transactionRepo.update(t.id, updated.toInsertJson());
+            if (context.mounted) Navigator.pop(context);
+          },
+        ),
+      ),
+    );
+    if (mounted) _reload();
+  }
+
+  Future<void> _delete(Transaction t) async {
+    final confirmed = await confirmDelete(
+      context,
+      title: 'Eliminar transaccion',
+      message:
+          'Vas a eliminar la transaccion de ${_currency.format(t.monto)} del ${DateFormat('dd/MM/yyyy').format(t.fecha)}. Esta accion no se puede deshacer.',
+    );
+    if (!confirmed || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _transactionRepo.delete(t.id);
+    } catch (e) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo eliminar la transaccion. Revisa tu conexion e intenta de nuevo.'),
+        ),
+      );
+      return;
+    }
+    if (mounted) _reload();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -179,9 +222,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     ),
                                   ),
                                   title: Text(_currency.format(t.monto)),
-                                  subtitle: Text(t.nota ?? t.tipo.name),
-                                  trailing: Text(
-                                    DateFormat('dd/MM/yyyy').format(t.fecha),
+                                  subtitle: Text(
+                                    '${DateFormat('dd/MM/yyyy').format(t.fecha)} · ${t.nota ?? t.tipo.name}',
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit_outlined),
+                                        tooltip: 'Editar',
+                                        onPressed: () => _openEdit(t),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline),
+                                        tooltip: 'Eliminar',
+                                        color: Theme.of(context).colorScheme.error,
+                                        onPressed: () => _delete(t),
+                                      ),
+                                    ],
                                   ),
                                 );
                               },

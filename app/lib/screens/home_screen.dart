@@ -10,7 +10,7 @@ import '../repositories/account_repository.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/transaction_repository.dart';
 import '../services/outbox_service.dart';
-import 'new_transaction_screen.dart';
+import 'transaction_form_screen.dart';
 
 final _currency = NumberFormat.currency(
   locale: 'es_CL',
@@ -68,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => NewTransactionScreen(
+        builder: (context) => TransactionFormScreen(
           accounts: accounts.where((a) => a.activo).toList(),
           categories: categories,
           // OutboxService.create() deliberately swallows network-failure
@@ -76,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // rethrowing (offline-first by design, see outbox_service.dart).
           // So unlike the old direct _transactionRepo.create(t) call, a
           // network failure here will NOT reach
-          // NewTransactionScreen._submit()'s error-surfacing catch: it
+          // TransactionFormScreen._submit()'s error-surfacing catch: it
           // queues silently and the form closes normally below, same as a
           // successful write. The pendingCount check after this screen
           // closes is what tells the user their transaction was queued
