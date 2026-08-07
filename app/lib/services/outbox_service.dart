@@ -55,6 +55,7 @@ class OutboxService {
           monto: (json['monto'] as num).toDouble(),
           fecha: DateTime.parse(json['fecha'] as String),
           nota: json['nota'] as String?,
+          recurringPaymentId: json['recurring_payment_id'] as String?,
         );
         await _repository.create(transaction);
         await _box.delete(key);
