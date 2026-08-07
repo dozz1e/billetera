@@ -17,6 +17,7 @@ final _currency = NumberFormat.currency(
   locale: 'es_CL',
   symbol: r'$',
   decimalDigits: 0,
+  customPattern: '¤#,##0',
 );
 final _date = DateFormat('dd/MM/yyyy');
 
