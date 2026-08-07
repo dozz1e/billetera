@@ -96,3 +96,18 @@ GoalVisual goalVisual(String estado, Color primary) => switch (estado) {
   ),
   _ => GoalVisual(Icons.flag_rounded, primary),
 };
+
+class DebtVisual {
+  const DebtVisual(this.icon, this.color);
+  final IconData icon;
+  final Color color;
+}
+
+/// `estado` is one of 'pendiente' | 'pagada'.
+DebtVisual debtVisual(String estado) => switch (estado) {
+  'pagada' => const DebtVisual(
+    Icons.check_circle_outline_rounded,
+    AppColors.metaAlcanzado,
+  ),
+  _ => const DebtVisual(Icons.schedule_rounded, AppColors.metaPausado),
+};
