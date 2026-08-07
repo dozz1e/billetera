@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 
 /// Fixed semantic colors that carry meaning across the app (transaction
-/// type, account type, goal state), independent of the Material color
-/// scheme generated from theme.dart's seed. Tuned for contrast against the
-/// dark scaffold (#121212) and card surface (#1E1E1E).
+/// type, account type, goal state, debt state), independent of the Material
+/// color scheme generated from theme.dart's seed. Tuned for contrast against
+/// the dark scaffold (#121212) and card surface (#1E1E1E).
 class AppColors {
   const AppColors._();
 
@@ -95,4 +95,19 @@ GoalVisual goalVisual(String estado, Color primary) => switch (estado) {
     AppColors.metaAlcanzado,
   ),
   _ => GoalVisual(Icons.flag_rounded, primary),
+};
+
+class DebtVisual {
+  const DebtVisual(this.icon, this.color);
+  final IconData icon;
+  final Color color;
+}
+
+/// `estado` is one of 'pendiente' | 'pagada'.
+DebtVisual debtVisual(String estado) => switch (estado) {
+  'pagada' => const DebtVisual(
+    Icons.check_circle_outline_rounded,
+    AppColors.metaAlcanzado,
+  ),
+  _ => const DebtVisual(Icons.schedule_rounded, AppColors.metaPausado),
 };
