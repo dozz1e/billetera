@@ -34,7 +34,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   final _categoryRepo = CategoryRepository(Supabase.instance.client);
   final _transactionRepo = TransactionRepository(Supabase.instance.client);
   final _pendingBox = Hive.box<Map>(googlePayPendingBoxName);
-  late final _googlePaySettings = GooglePaySettings(Hive.box(googlePaySettingsBoxName));
+  final _settingsBox = Hive.box(googlePaySettingsBoxName);
+  late final _googlePaySettings = GooglePaySettings(_settingsBox);
 
   List<Account> _accounts = [];
   List<Category> _categories = [];
@@ -139,7 +140,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // afterwards — used by both _insertPending (which reloads immediately) and
   // _insertAllPending (which reloads once after the whole batch, instead of
   // once per record).
-  Future<void> _insertPendingCore(PendingGooglePayRecord record) async {
+  //
+  // `accounts`: the fresh account list to validate the configured default
+  // account against. When omitted, fetched here (used by the single-record
+  // _insertPending path, which needs its own fresh fetch). _insertAllPending
+  // fetches it once for the whole batch and passes it down, instead of every
+  // iteration doing its own redundant Supabase round-trip.
+  Future<void> _insertPendingCore(PendingGooglePayRecord record, {List<Account>? accounts}) async {
     final accountId = _defaultAccountId;
     if (accountId == null) return;
 
@@ -157,15 +164,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
 
     List<Account> freshAccounts;
-    try {
-      freshAccounts = await _accountRepo.fetchAll();
-    } catch (e) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo insertar la transaccion. Revisa tu conexion e intenta de nuevo.'),
-        ),
-      );
-      return;
+    if (accounts != null) {
+      freshAccounts = accounts;
+    } else {
+      try {
+        freshAccounts = await _accountRepo.fetchAll();
+      } catch (e) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo insertar la transaccion. Revisa tu conexion e intenta de nuevo.'),
+          ),
+        );
+        return;
+      }
     }
     final isActive = freshAccounts.any((a) => a.id == accountId && a.activo);
     if (!isActive) {
@@ -218,79 +229,100 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _insertAllPending(List<PendingGooglePayRecord> records) async {
+    final messenger = ScaffoldMessenger.of(context);
+    List<Account> accounts;
+    try {
+      accounts = await _accountRepo.fetchAll();
+    } catch (e) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo insertar la transaccion. Revisa tu conexion e intenta de nuevo.'),
+        ),
+      );
+      return;
+    }
     for (final record in records) {
-      await _insertPendingCore(record);
+      await _insertPendingCore(record, accounts: accounts);
     }
     if (mounted) _reload();
   }
 
+  // Reacts to both the pending-records box (new/discarded/inserted records)
+  // and the settings box (default account configured/changed elsewhere,
+  // e.g. in GooglePaySettingsScreen) — needed because AppShell keeps
+  // HistoryScreen alive in an IndexedStack, so it doesn't naturally rebuild
+  // on tab switch, and the card reads `_defaultAccountId` (backed by the
+  // settings box) on every build.
   Widget _buildGooglePayCard() {
-    return ValueListenableBuilder<Box<Map>>(
-      valueListenable: _pendingBox.listenable(),
-      builder: (context, box, _) {
-        final pendientes = box.values
-            .map((m) => PendingGooglePayRecord.fromMap(m))
-            .where((r) => r.estado == 'pendiente')
-            .toList();
-        if (pendientes.isEmpty) return const SizedBox.shrink();
+    return ValueListenableBuilder<Box>(
+      valueListenable: _settingsBox.listenable(),
+      builder: (context, settingsBox, _) => ValueListenableBuilder<Box<Map>>(
+        valueListenable: _pendingBox.listenable(),
+        builder: (context, box, _) {
+          final pendientes = box.values
+              .map((m) => PendingGooglePayRecord.fromMap(m))
+              .where((r) => r.estado == 'pendiente')
+              .toList();
+          if (pendientes.isEmpty) return const SizedBox.shrink();
 
-        final accountId = _defaultAccountId;
+          final accountId = _defaultAccountId;
 
-        return Card(
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Registros de Google Pay',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 4),
-                Text('${pendientes.length} registros pendientes de insertar'),
-                if (accountId == null) ...[
-                  const SizedBox(height: 8),
+          return Card(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    'Configura una cuenta por defecto para Google Pay en Cuentas.',
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    'Registros de Google Pay',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
+                  const SizedBox(height: 4),
+                  Text('${pendientes.length} registros pendientes de insertar'),
+                  if (accountId == null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Configura una cuenta por defecto para Google Pay en Cuentas.',
+                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  for (final record in pendientes)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(_currency.format(record.monto)),
+                      subtitle: Text(record.comercioTexto),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.check),
+                            tooltip: 'Insertar',
+                            onPressed: accountId == null ? null : () => _insertPending(record),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            tooltip: 'Descartar',
+                            onPressed: () => _discardPending(record),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (accountId != null)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => _insertAllPending(pendientes),
+                        child: const Text('Insertar todos'),
+                      ),
+                    ),
                 ],
-                const SizedBox(height: 8),
-                for (final record in pendientes)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(_currency.format(record.monto)),
-                    subtitle: Text(record.comercioTexto),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.check),
-                          tooltip: 'Insertar',
-                          onPressed: accountId == null ? null : () => _insertPending(record),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          tooltip: 'Descartar',
-                          onPressed: () => _discardPending(record),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (accountId != null)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => _insertAllPending(pendientes),
-                      child: const Text('Insertar todos'),
-                    ),
-                  ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 

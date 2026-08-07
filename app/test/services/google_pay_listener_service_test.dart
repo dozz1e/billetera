@@ -15,6 +15,12 @@ class _FakeSource implements GooglePayNotificationSource {
   /// shade when `start()` is called (e.g. app was closed when they arrived).
   List<RawNotification> activeNotifications = const [];
 
+  /// When set, [getActiveNotifications] throws this instead of returning
+  /// [activeNotifications] — simulates the drain's real-device failure mode
+  /// (e.g. the plugin's `fromMap` `TypeError`, or any other platform-boundary
+  /// exception) so callers can assert `start()` survives it.
+  Object? activeNotificationsError;
+
   @override
   Stream<RawNotification> get events => _controller.stream;
 
@@ -25,7 +31,11 @@ class _FakeSource implements GooglePayNotificationSource {
   Future<void> requestPermission() async {}
 
   @override
-  Future<List<RawNotification>> getActiveNotifications() async => activeNotifications;
+  Future<List<RawNotification>> getActiveNotifications() async {
+    final error = activeNotificationsError;
+    if (error != null) throw error;
+    return activeNotifications;
+  }
 
   void emit(RawNotification notification) => _controller.add(notification);
 
@@ -147,5 +157,33 @@ void main() {
 
     activeService.dispose();
     await activeSource.close();
+  });
+
+  test('start() swallows a drain failure and the live subscription keeps working', () async {
+    // Independent source/service pair, same reasoning as the drain test
+    // above: isolates this from the shared `setUp` service/box state.
+    final throwingSource = _FakeSource()..activeNotificationsError = Exception('boom: getActiveNotifications failed');
+    final throwingService = GooglePayListenerService(throwingSource, box, _categories);
+
+    // start() must complete without throwing even though the drain fails.
+    await throwingService.start();
+
+    // The live stream, subscribed to before the drain ran, must still work.
+    throwingSource.emit(const RawNotification(
+      packageName: googleWalletPackageName,
+      notificationKey: 'notif-after-drain-failure',
+      title: 'Google Wallet',
+      text: 'Pagaste \$700,00 en LIVE STREAM STILL WORKS',
+    ));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(box.containsKey('notif-after-drain-failure'), isTrue);
+    final stored = box.get('notif-after-drain-failure')!;
+    expect(stored['monto'], 700.0);
+    expect(stored['comercio_texto'], 'LIVE STREAM STILL WORKS');
+    expect(stored['estado'], 'pendiente');
+
+    throwingService.dispose();
+    await throwingSource.close();
   });
 }

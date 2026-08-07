@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:hive/hive.dart';
 
 import '../logic/google_pay_category_matcher.dart';
@@ -23,11 +24,21 @@ class GooglePayListenerService {
   // `_handle`'s dedupe check (via `_box.containsKey`) makes it safe either
   // way if the same notification shows up in both the drain and the live
   // stream.
+  //
+  // The drain crosses a native platform boundary (`getActiveNotifications()`)
+  // that can fail in ways beyond our control (platform exceptions, plugin
+  // bugs on some OS/device combos, etc.) — any failure there is caught and
+  // logged rather than allowed to propagate, so a broken drain never takes
+  // down the live subscription that was just established above.
   Future<void> start() async {
     _subscription = _source.events.listen(_handle);
-    final active = await _source.getActiveNotifications();
-    for (final notification in active) {
-      _handle(notification);
+    try {
+      final active = await _source.getActiveNotifications();
+      for (final notification in active) {
+        _handle(notification);
+      }
+    } catch (e) {
+      debugPrint('GooglePayListenerService: failed to drain active notifications: $e');
     }
   }
 

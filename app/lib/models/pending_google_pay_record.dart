@@ -14,7 +14,12 @@ class PendingGooglePayRecord {
   final String comercioTexto;
   final String? categoriaSugeridaId;
   final DateTime fecha;
-  final String estado; // 'pendiente' | 'descartado'
+  // 'pendiente' | 'descartado' | 'insertado' — 'insertado' marks a record
+  // that was successfully inserted as a transaction: its key is kept (rather
+  // than deleted) so GooglePayListenerService's dedupe check still catches a
+  // re-posted notification, but it's filtered out of the pending-card UI
+  // (which only shows 'pendiente').
+  final String estado;
   final DateTime createdAt;
 
   factory PendingGooglePayRecord.fromMap(Map map) => PendingGooglePayRecord(
