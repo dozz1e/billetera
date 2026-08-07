@@ -11,11 +11,14 @@ import 'screens/charts_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'services/google_pay_settings.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   await Hive.openBox<Map>('outbox');
+  await Hive.openBox<Map>(googlePayPendingBoxName);
+  await Hive.openBox(googlePaySettingsBoxName);
   await Supabase.initialize(
     url: Env.supabaseUrl,
     publishableKey: Env.supabaseAnonKey,
