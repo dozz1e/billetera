@@ -105,7 +105,14 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
   Future<void> _openForm() async {
     final cuentasActivas = _accounts.where((a) => a.activo).toList();
-    if (cuentasActivas.isEmpty) return;
+    if (cuentasActivas.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Primero crea una cuenta activa.'),
+        ),
+      );
+      return;
+    }
 
     final nombreController = TextEditingController();
     final montoController = TextEditingController();

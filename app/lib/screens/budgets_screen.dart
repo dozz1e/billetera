@@ -70,7 +70,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   });
 
   Future<void> _openForm() async {
-    if (_categories.isEmpty) return;
+    if (_categories.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Primero crea una categoria de gasto.'),
+        ),
+      );
+      return;
+    }
     var categoryId = _categories.first.id;
     final montoController = TextEditingController();
     String? error;
