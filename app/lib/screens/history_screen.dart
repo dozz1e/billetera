@@ -151,18 +151,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final accountId = _validDefaultAccountId;
     if (accountId == null) return;
 
-    await _transactionRepo.create(
-      Transaction(
-        id: '',
-        userId: '',
-        accountId: accountId,
-        categoryId: record.categoriaSugeridaId,
-        tipo: TransactionType.gasto,
-        monto: record.monto,
-        fecha: record.fecha,
-        nota: record.comercioTexto,
-      ),
-    );
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _transactionRepo.create(
+        Transaction(
+          id: '',
+          userId: '',
+          accountId: accountId,
+          categoryId: record.categoriaSugeridaId,
+          tipo: TransactionType.gasto,
+          monto: record.monto,
+          fecha: record.fecha,
+          nota: record.comercioTexto,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo insertar la transaccion. Revisa tu conexion e intenta de nuevo.'),
+        ),
+      );
+      return;
+    }
     await _pendingBox.delete(record.id);
     if (mounted) _reload();
   }
