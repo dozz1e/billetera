@@ -37,6 +37,28 @@ void main() {
       expect(parsed.comercioTexto, 'HIPER VINA CENTRO');
     });
 
+    test('parses a CL-style whole-peso amount with thousands dot and no cents', () {
+      final parsed = parseGooglePayNotification(
+        title: 'Google Wallet',
+        text: 'Pagaste \$1.300 en ALGUN COMERCIO',
+      );
+
+      expect(parsed, isNotNull);
+      expect(parsed!.monto, 1300.0);
+      expect(parsed.comercioTexto, 'ALGUN COMERCIO');
+    });
+
+    test('parses a US-style whole-dollar amount with thousands comma and no cents', () {
+      final parsed = parseGooglePayNotification(
+        title: 'Google Wallet',
+        text: 'You paid \$8,574 at SOME MERCHANT',
+      );
+
+      expect(parsed, isNotNull);
+      expect(parsed!.monto, 8574.0);
+      expect(parsed.comercioTexto, 'SOME MERCHANT');
+    });
+
     test('returns null for an unrelated notification body', () {
       final parsed = parseGooglePayNotification(
         title: 'Google Wallet',

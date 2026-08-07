@@ -29,20 +29,29 @@ ParsedGooglePayNotification? parseGooglePayNotification({
 /// Handles both decimal conventions since the real device format isn't
 /// confirmed yet (see risk note in the Google Pay design spec): CL-style
 /// ("8.574,00", comma decimal) and US-style ("8,574.00", point decimal).
-/// Whichever of `,`/`.` appears last in the string is treated as the
-/// decimal separator; the other is stripped as a thousands separator.
+/// Disambiguates by digit count after the last separator rather than by
+/// position alone: exactly 2 trailing digits means that separator is the
+/// decimal point (the other separator, if any, is thousands grouping);
+/// any other trailing digit count (including a lone thousands separator on
+/// a whole-peso CLP amount with no cents, e.g. "1.300" or "8,574") means
+/// there is no decimal component at all, so every separator found is
+/// stripped as thousands grouping.
 double? _parseMonto(String raw) {
   final trimmed = raw.trim();
   final lastComma = trimmed.lastIndexOf(',');
   final lastDot = trimmed.lastIndexOf('.');
+  final lastSeparator = lastComma > lastDot ? lastComma : lastDot;
 
-  String normalized;
-  if (lastComma > lastDot) {
-    normalized = trimmed.replaceAll('.', '').replaceAll(',', '.');
-  } else if (lastDot > lastComma) {
-    normalized = trimmed.replaceAll(',', '');
-  } else {
-    normalized = trimmed;
+  if (lastSeparator == -1) return double.tryParse(trimmed);
+
+  final digitsAfterLastSeparator = trimmed.length - lastSeparator - 1;
+  if (digitsAfterLastSeparator != 2) {
+    return double.tryParse(trimmed.replaceAll(',', '').replaceAll('.', ''));
   }
+
+  final decimalChar = trimmed[lastSeparator];
+  final thousandsChar = decimalChar == ',' ? '.' : ',';
+  var normalized = trimmed.replaceAll(thousandsChar, '');
+  if (decimalChar == ',') normalized = normalized.replaceAll(',', '.');
   return double.tryParse(normalized);
 }
