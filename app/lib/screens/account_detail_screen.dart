@@ -1,4 +1,3 @@
-// app/lib/screens/account_detail_screen.dart
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -28,7 +27,7 @@ class AccountDetailScreen extends StatefulWidget {
   });
 
   final Account account;
-  final Future<Account?> Function() onEdit;
+  final Future<Account?> Function(Account current) onEdit;
 
   @override
   State<AccountDetailScreen> createState() => _AccountDetailScreenState();
@@ -55,7 +54,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
   };
 
   Future<void> _edit() async {
-    final updated = await widget.onEdit();
+    final updated = await widget.onEdit(_account);
     if (updated != null && mounted) setState(() => _account = updated);
   }
 
@@ -80,6 +79,9 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           final transactions = snapshot.data!;
+          // Intentionally includes future-dated transactions, matching the
+          // Home/Cuentas convention; the period chart below stops at "now",
+          // so this can legitimately differ from the chart's latest point.
           final saldoActual = calculateAccountBalance(
             saldoInicial: _account.saldoInicial,
             accountId: _account.id,
@@ -114,18 +116,22 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                         child: Icon(visual.icon, color: visual.color),
                       ),
                       const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Saldo actual',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          Text(
-                            _currency.format(saldoActual),
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
-                        ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Saldo actual',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Text(
+                              _currency.format(saldoActual),
+                              style: Theme.of(
+                                context,
+                              ).textTheme.headlineMedium,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),

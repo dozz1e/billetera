@@ -278,10 +278,10 @@ class _AccountsScreenState extends State<AccountsScreen> {
                                 MaterialPageRoute(
                                   builder: (context) => AccountDetailScreen(
                                     account: a,
-                                    onEdit: () => showAccountFormDialog(
+                                    onEdit: (current) => showAccountFormDialog(
                                       context,
                                       _repo,
-                                      account: a,
+                                      account: current,
                                     ),
                                   ),
                                 ),

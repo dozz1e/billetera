@@ -218,11 +218,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     MaterialPageRoute(
                                       builder: (context) => AccountDetailScreen(
                                         account: a,
-                                        onEdit: () => showAccountFormDialog(
-                                          context,
-                                          _accountRepo,
-                                          account: a,
-                                        ),
+                                        onEdit: (current) =>
+                                            showAccountFormDialog(
+                                              context,
+                                              _accountRepo,
+                                              account: current,
+                                            ),
                                       ),
                                     ),
                                   );

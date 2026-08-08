@@ -1,4 +1,3 @@
-// app/test/logic/account_period_summary_test.dart
 import 'package:billetera/logic/account_period_summary.dart';
 import 'package:billetera/models/account.dart';
 import 'package:billetera/models/transaction.dart';
@@ -129,6 +128,72 @@ void main() {
       // saldoInicio 1000, saldoFinal 1500 -> +50%
       expect(result.variacionPorcentual, 50.0);
     });
+
+    test(
+      'variacionPorcentual is positive when a negative saldoInicio improves (moves toward zero)',
+      () {
+        const creditoAccount = Account(
+          id: 'a3',
+          userId: 'u',
+          nombre: 'Tarjeta',
+          tipo: 'credito',
+          saldoInicial: -100000,
+          activo: true,
+        );
+
+        final result = accountBalanceForPeriod(
+          account: creditoAccount,
+          transactions: [
+            _t(
+              accountId: 'a3',
+              tipo: TransactionType.ingreso,
+              monto: 50000,
+              fecha: DateTime(2026, 2, 10),
+            ),
+          ],
+          from: DateTime(2026, 2, 1),
+          hasta: DateTime(2026, 2, 28),
+        );
+
+        // saldoInicio -100000, saldoFinal -50000 -> improvement -> +50%
+        expect(result.saldoInicio, -100000);
+        expect(result.saldoFinal, -50000);
+        expect(result.variacionPorcentual, 50.0);
+      },
+    );
+
+    test(
+      'variacionPorcentual is negative when a negative saldoInicio worsens (moves away from zero)',
+      () {
+        const creditoAccount = Account(
+          id: 'a3',
+          userId: 'u',
+          nombre: 'Tarjeta',
+          tipo: 'credito',
+          saldoInicial: -100000,
+          activo: true,
+        );
+
+        final result = accountBalanceForPeriod(
+          account: creditoAccount,
+          transactions: [
+            _t(
+              accountId: 'a3',
+              tipo: TransactionType.gasto,
+              monto: 50000,
+              fecha: DateTime(2026, 2, 10),
+            ),
+          ],
+          from: DateTime(2026, 2, 1),
+          hasta: DateTime(2026, 2, 28),
+        );
+
+        // saldoInicio -100000, saldoFinal -150000 -> worsened -> -50%
+        expect(result.saldoInicio, -100000);
+        expect(result.saldoFinal, -150000);
+        expect(result.variacionPorcentual, -50.0);
+      },
+    );
 
     test('boundaries are inclusive: a transaction exactly on "from" or "hasta" counts', () {
       final result = accountBalanceForPeriod(

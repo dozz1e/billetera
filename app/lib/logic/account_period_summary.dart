@@ -77,7 +77,7 @@ AccountPeriodSummary accountBalanceForPeriod({
   final saldoFinal = running;
   final variacionPorcentual = saldoInicio == 0
       ? null
-      : (saldoFinal - saldoInicio) / saldoInicio * 100;
+      : (saldoFinal - saldoInicio) / saldoInicio.abs() * 100;
 
   return AccountPeriodSummary(
     points: points,
