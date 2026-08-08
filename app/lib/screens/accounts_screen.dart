@@ -121,8 +121,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
   });
 
   Future<void> _openForm({Account? account}) async {
-    await showAccountFormDialog(context, _repo, account: account);
-    if (mounted) _reload();
+    final result = await showAccountFormDialog(context, _repo, account: account);
+    if (result != null && mounted) _reload();
   }
 
   Future<void> _toggleActivo(Account account) async {
