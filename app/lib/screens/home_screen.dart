@@ -137,10 +137,6 @@ class _HomeScreenState extends State<HomeScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           final (accounts, transactions) = snapshot.data!;
-          final total = calculateTotalBalance(
-            accounts: accounts,
-            allTransactions: transactions,
-          );
           final recientes = transactions.take(10).toList();
 
           return RefreshIndicator(
@@ -148,85 +144,64 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: scheme.primary.withValues(
-                            alpha: 0.16,
-                          ),
-                          child: Icon(
-                            Icons.account_balance_wallet_rounded,
-                            color: scheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Saldo total',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            Text(
-                              _currency.format(total),
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 92,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: accounts.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 8),
-                    itemBuilder: (context, i) {
-                      final a = accounts[i];
-                      final balance = calculateAccountBalance(
-                        saldoInicial: a.saldoInicial,
-                        accountId: a.id,
-                        transactions: transactions,
-                      );
-                      final visual = accountVisual(a.tipo, scheme.primary);
-                      return Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    visual.icon,
-                                    size: 16,
-                                    color: visual.color,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    a.nombre,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.labelLarge,
-                                  ),
-                                ],
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    for (final a in accounts)
+                      Builder(
+                        builder: (context) {
+                          final balance = calculateAccountBalance(
+                            saldoInicial: a.saldoInicial,
+                            accountId: a.id,
+                            transactions: transactions,
+                          );
+                          final visual = accountVisual(a.tipo, scheme.primary);
+                          return SizedBox(
+                            width:
+                                (MediaQuery.of(context).size.width - 16 * 2 - 12) /
+                                2,
+                            child: Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          visual.icon,
+                                          size: 22,
+                                          color: visual.color,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            a.nombre,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.titleMedium,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _currency.format(balance),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleLarge,
+                                    ),
+                                  ],
+                                ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(_currency.format(balance)),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 Padding(

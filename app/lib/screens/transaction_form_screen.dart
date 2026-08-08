@@ -114,7 +114,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       context: context,
       initialDate: _fecha,
       firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
     );
     if (picked != null && mounted) setState(() => _fecha = picked);
   }
