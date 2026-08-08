@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/colors.dart';
+
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.tabs});
 
@@ -20,13 +22,37 @@ class _AppShellState extends State<AppShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.account_balance_wallet), label: 'Cuentas'),
-          NavigationDestination(icon: Icon(Icons.pie_chart_outline), label: 'Presupuestos'),
-          NavigationDestination(icon: Icon(Icons.bar_chart), label: 'Graficas'),
-          NavigationDestination(icon: Icon(Icons.history), label: 'Historial'),
-          NavigationDestination(icon: Icon(Icons.people_outline), label: 'Deudas'),
+        destinations: [
+          NavigationDestination(
+            icon: Icon(Icons.home, color: AppColors.chartPalette[0]),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(
+              Icons.account_balance_wallet,
+              color: AppColors.chartPalette[1],
+            ),
+            label: 'Cuentas',
+          ),
+          NavigationDestination(
+            icon: Icon(
+              Icons.pie_chart_outline,
+              color: AppColors.chartPalette[2],
+            ),
+            label: 'Presupuestos',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bar_chart, color: AppColors.chartPalette[3]),
+            label: 'Graficas',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history, color: AppColors.chartPalette[4]),
+            label: 'Historial',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.people_outline, color: AppColors.chartPalette[5]),
+            label: 'Deudas',
+          ),
         ],
       ),
     );
