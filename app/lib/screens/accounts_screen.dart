@@ -5,6 +5,7 @@ import '../core/colors.dart';
 import '../core/dialogs.dart';
 import '../models/account.dart';
 import '../repositories/account_repository.dart';
+import 'account_detail_screen.dart';
 import 'categories_screen.dart';
 import 'google_pay_settings_screen.dart';
 
@@ -271,7 +272,22 @@ class _AccountsScreenState extends State<AccountsScreen> {
                                 ),
                               ],
                             ),
-                            onTap: () => _openForm(account: a),
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AccountDetailScreen(
+                                    account: a,
+                                    onEdit: () => showAccountFormDialog(
+                                      context,
+                                      _repo,
+                                      account: a,
+                                    ),
+                                  ),
+                                ),
+                              );
+                              if (mounted) _reload();
+                            },
                           );
                         },
                       ),
