@@ -37,15 +37,23 @@ class RecurringPaymentService {
   /// Generates every Transaction due for the active recurring payments, up
   /// to [today] (defaults to `DateTime.now()`). Returns how many were
   /// generated. Never throws — a failure (e.g. no network) is logged and
-  /// treated as "generated 0" so it never blocks HomeScreen from loading.
+  /// treated as "generated 0 for that template" so it never blocks
+  /// HomeScreen from loading, and never blocks other templates in the same
+  /// run from being processed.
   Future<int> generateDue({DateTime? today}) async {
     final hoy = today ?? DateTime.now();
+    List<RecurringPayment> templates;
     try {
-      final templates = await _source.fetchActive();
-      var generated = 0;
+      templates = await _source.fetchActive();
+    } catch (e) {
+      debugPrint('RecurringPaymentService: failed to fetch active templates: $e');
+      return 0;
+    }
 
-      for (final template in templates) {
-        final accountExists = _accounts.any((a) => a.id == template.accountId);
+    var generated = 0;
+    for (final template in templates) {
+      try {
+        final accountExists = _accounts.any((a) => a.id == template.accountId && a.activo);
         final categoryExists = _categories.any((c) => c.id == template.categoryId);
         if (!accountExists || !categoryExists) continue;
 
@@ -74,11 +82,10 @@ class RecurringPaymentService {
           generated++;
         }
         await _source.updateUltimaGenerada(template.id, due.last);
+      } catch (e) {
+        debugPrint('RecurringPaymentService: failed to generate for template ${template.id}: $e');
       }
-      return generated;
-    } catch (e) {
-      debugPrint('RecurringPaymentService: failed to generate due payments: $e');
-      return 0;
     }
+    return generated;
   }
 }

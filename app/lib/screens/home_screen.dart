@@ -41,6 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
     TransactionRepository(Supabase.instance.client),
   );
   GooglePayListenerService? _googlePayListener;
+  bool _generating = false;
 
   late Future<(List<Account>, List<Transaction>)> _future;
 
@@ -86,6 +87,8 @@ class _HomeScreenState extends State<HomeScreen> {
   });
 
   Future<void> _generateDueRecurringPayments() async {
+    if (_generating) return;
+    _generating = true;
     try {
       final accounts = await _accountRepo.fetchAll();
       final categories = await _categoryRepo.fetchAll();
@@ -109,6 +112,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       debugPrint('HomeScreen: failed to generate due recurring payments: $e');
+    } finally {
+      _generating = false;
     }
   }
 

@@ -83,6 +83,38 @@ void main() {
     expect(find.text('Comida'), findsOneWidget);
   });
 
+  testWidgets('saving an edited transaction preserves its recurringPaymentId', (tester) async {
+    Transaction? submitted;
+    final initial = Transaction(
+      id: 't1',
+      userId: 'u1',
+      accountId: 'a2',
+      categoryId: 'c1',
+      tipo: TransactionType.gasto,
+      monto: 2500,
+      fecha: DateTime(2026, 5, 10),
+      nota: 'Super',
+      recurringPaymentId: 'r1',
+    );
+
+    await tester.pumpWidget(MaterialApp(
+      home: TransactionFormScreen(
+        accounts: _accounts,
+        categories: _categories,
+        onSubmit: (t) async {
+          submitted = t;
+        },
+        initial: initial,
+      ),
+    ));
+
+    await tester.tap(find.text('Guardar'));
+    await tester.pumpAndSettle();
+
+    expect(submitted, isNotNull);
+    expect(submitted!.recurringPaymentId, 'r1');
+  });
+
   testWidgets('prefills transferencia fields from initial transaction', (tester) async {
     final initial = Transaction(
       id: 't2',

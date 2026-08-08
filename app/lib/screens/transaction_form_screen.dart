@@ -124,6 +124,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       monto: monto,
       fecha: _fecha,
       nota: _notaController.text.trim().isEmpty ? null : _notaController.text.trim(),
+      recurringPaymentId: widget.initial?.recurringPaymentId,
     );
 
     try {

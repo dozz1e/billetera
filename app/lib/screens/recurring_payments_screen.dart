@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/dialogs.dart';
 import '../models/recurring_payment.dart';
+import '../repositories/account_repository.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/recurring_payment_repository.dart';
 
@@ -25,8 +26,10 @@ class RecurringPaymentsScreen extends StatefulWidget {
 class _RecurringPaymentsScreenState extends State<RecurringPaymentsScreen> {
   final _repo = RecurringPaymentRepository(Supabase.instance.client);
   final _categoryRepo = CategoryRepository(Supabase.instance.client);
+  final _accountRepo = AccountRepository(Supabase.instance.client);
   late Future<List<RecurringPayment>> _future;
   Map<String, String> _categoryNames = {};
+  Map<String, String> _accountNames = {};
 
   @override
   void initState() {
@@ -40,6 +43,15 @@ class _RecurringPaymentsScreenState extends State<RecurringPaymentsScreen> {
       }
     }).onError((e, st) {
       debugPrint('RecurringPaymentsScreen: failed to load categories: $e');
+    });
+    _accountRepo.fetchAll().then((accounts) {
+      if (mounted) {
+        setState(
+          () => _accountNames = {for (final a in accounts) a.id: a.nombre},
+        );
+      }
+    }).onError((e, st) {
+      debugPrint('RecurringPaymentsScreen: failed to load accounts: $e');
     });
   }
 
@@ -126,6 +138,7 @@ class _RecurringPaymentsScreenState extends State<RecurringPaymentsScreen> {
                       ),
                       title: Text(_categoryNames[p.categoryId] ?? 'Categoria'),
                       subtitle: Text(
+                        '${_accountNames[p.accountId] ?? 'Cuenta'} · '
                         '${_currency.format(p.monto)} · dia ${p.diaMes}'
                         '${p.activo ? '' : ' · pausado'}',
                       ),
