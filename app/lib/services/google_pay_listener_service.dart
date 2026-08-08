@@ -50,7 +50,13 @@ class GooglePayListenerService {
       title: notification.title,
       text: notification.text,
     );
-    if (parsed == null) return;
+    if (parsed == null) {
+      debugPrint(
+        'GooglePayListenerService: could not parse notification '
+        'title="${notification.title}" text="${notification.text}"',
+      );
+      return;
+    }
 
     final categoriaId = matchCategoryId(
       comercioTexto: parsed.comercioTexto,
