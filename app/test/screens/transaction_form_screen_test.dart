@@ -1,5 +1,6 @@
 import 'package:billetera/models/account.dart';
 import 'package:billetera/models/category.dart';
+import 'package:billetera/models/recurring_payment.dart';
 import 'package:billetera/models/transaction.dart';
 import 'package:billetera/screens/transaction_form_screen.dart';
 import 'package:flutter/material.dart';
@@ -137,5 +138,77 @@ void main() {
 
     expect(submitted, isNotNull);
     expect(submitted!.fecha, DateTime(today.year, today.month, 1));
+  });
+
+  testWidgets('shows the repeat-monthly checkbox only for new gasto entries when onSubmitRecurring is provided', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: TransactionFormScreen(
+        accounts: _accounts,
+        categories: _categories,
+        onSubmit: (_) async {},
+        onSubmitRecurring: (_) async {},
+      ),
+    ));
+
+    expect(find.text('Repetir cada mes'), findsOneWidget);
+
+    await tester.tap(find.text('Ingreso'));
+    await tester.pumpAndSettle();
+    expect(find.text('Repetir cada mes'), findsNothing);
+  });
+
+  testWidgets('hides the repeat-monthly checkbox when editing an existing transaction', (tester) async {
+    final initial = Transaction(
+      id: 't1',
+      userId: 'u1',
+      accountId: 'a1',
+      categoryId: 'c1',
+      tipo: TransactionType.gasto,
+      monto: 100,
+      fecha: DateTime(2026, 1, 1),
+    );
+
+    await tester.pumpWidget(MaterialApp(
+      home: TransactionFormScreen(
+        accounts: _accounts,
+        categories: _categories,
+        onSubmit: (_) async {},
+        onSubmitRecurring: (_) async {},
+        initial: initial,
+      ),
+    ));
+
+    expect(find.text('Repetir cada mes'), findsNothing);
+  });
+
+  testWidgets('checking repeat-monthly calls onSubmitRecurring instead of onSubmit', (tester) async {
+    RecurringPayment? submitted;
+    var onSubmitCalled = false;
+
+    await tester.pumpWidget(MaterialApp(
+      home: TransactionFormScreen(
+        accounts: _accounts,
+        categories: _categories,
+        onSubmit: (_) async {
+          onSubmitCalled = true;
+        },
+        onSubmitRecurring: (r) async {
+          submitted = r;
+        },
+      ),
+    ));
+
+    await tester.enterText(find.byKey(const Key('monto_field')), '15000');
+    await tester.tap(find.byKey(const Key('recurrente_checkbox')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Guardar'));
+    await tester.pumpAndSettle();
+
+    expect(onSubmitCalled, isFalse);
+    expect(submitted, isNotNull);
+    expect(submitted!.monto, 15000.0);
+    expect(submitted!.accountId, 'a1');
+    expect(submitted!.categoryId, 'c1');
+    expect(submitted!.diaMes, DateTime.now().day);
   });
 }

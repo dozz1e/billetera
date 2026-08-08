@@ -136,6 +136,16 @@ class _HomeScreenState extends State<HomeScreen> {
             await _outbox.create(t);
             if (context.mounted) Navigator.pop(context);
           },
+          onSubmitRecurring: (r) async {
+            await _recurringRepo.create(r);
+            if (context.mounted) Navigator.pop(context);
+            // Unlike a normal transaction, creating a template alone doesn't
+            // put anything in the ledger — if fechaInicio is today or past,
+            // this generates that first occurrence immediately instead of
+            // leaving it stuck until the next full app restart (initState
+            // already ran once before this FAB was tapped).
+            await _generateDueRecurringPayments();
+          },
         ),
       ),
     );
