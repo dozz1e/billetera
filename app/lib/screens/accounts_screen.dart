@@ -10,6 +10,95 @@ import 'google_pay_settings_screen.dart';
 
 const _tipos = ['efectivo', 'banco', 'credito', 'billetera_digital'];
 
+Future<Account?> showAccountFormDialog(
+  BuildContext context,
+  AccountRepository repo, {
+  Account? account,
+}) async {
+  final nombreController = TextEditingController(text: account?.nombre ?? '');
+  final saldoController = TextEditingController(
+    text: account?.saldoInicial.toString() ?? '0',
+  );
+  var tipo = account?.tipo ?? _tipos.first;
+  String? error;
+  Account? result;
+
+  await showDialog<void>(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setDialogState) => AlertDialog(
+        insetPadding: kDialogInsetPadding,
+        title: Text(account == null ? 'Nueva cuenta' : 'Editar cuenta'),
+        content: wideDialogContent([
+          TextField(
+            controller: nombreController,
+            decoration: const InputDecoration(labelText: 'Nombre'),
+          ),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<String>(
+            initialValue: tipo,
+            decoration: const InputDecoration(labelText: 'Tipo'),
+            items: _tipos
+                .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                .toList(),
+            onChanged: (v) => setDialogState(() => tipo = v!),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: saldoController,
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
+            ),
+            decoration: const InputDecoration(labelText: 'Saldo inicial'),
+          ),
+          if (error != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+          const SizedBox(height: 20),
+          dialogActions(
+            onCancel: () => Navigator.pop(context),
+            onConfirm: () async {
+              final saldo = double.tryParse(saldoController.text) ?? 0;
+              try {
+                if (account == null) {
+                  result = await repo.create(
+                    Account(
+                      id: '',
+                      userId: '',
+                      nombre: nombreController.text.trim(),
+                      tipo: tipo,
+                      saldoInicial: saldo,
+                      activo: true,
+                    ),
+                  );
+                } else {
+                  result = await repo.update(account.id, {
+                    'nombre': nombreController.text.trim(),
+                    'tipo': tipo,
+                    'saldo_inicial': saldo,
+                  });
+                }
+              } catch (e) {
+                setDialogState(
+                  () => error =
+                      'No se pudo guardar la cuenta. Revisa tu conexion e intenta de nuevo.',
+                );
+                return;
+              }
+              if (context.mounted) Navigator.pop(context);
+            },
+          ),
+        ]),
+      ),
+    ),
+  );
+  return result;
+}
+
 class AccountsScreen extends StatefulWidget {
   const AccountsScreen({super.key});
 
@@ -32,87 +121,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
   });
 
   Future<void> _openForm({Account? account}) async {
-    final nombreController = TextEditingController(text: account?.nombre ?? '');
-    final saldoController = TextEditingController(
-      text: account?.saldoInicial.toString() ?? '0',
-    );
-    var tipo = account?.tipo ?? _tipos.first;
-    String? error;
-
-    await showDialog<void>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          insetPadding: kDialogInsetPadding,
-          title: Text(account == null ? 'Nueva cuenta' : 'Editar cuenta'),
-          content: wideDialogContent([
-            TextField(
-              controller: nombreController,
-              decoration: const InputDecoration(labelText: 'Nombre'),
-            ),
-            const SizedBox(height: 14),
-            DropdownButtonFormField<String>(
-              initialValue: tipo,
-              decoration: const InputDecoration(labelText: 'Tipo'),
-              items: _tipos
-                  .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                  .toList(),
-              onChanged: (v) => setDialogState(() => tipo = v!),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: saldoController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(labelText: 'Saldo inicial'),
-            ),
-            if (error != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ],
-            const SizedBox(height: 20),
-            dialogActions(
-              onCancel: () => Navigator.pop(context),
-              onConfirm: () async {
-                final saldo = double.tryParse(saldoController.text) ?? 0;
-                try {
-                  if (account == null) {
-                    await _repo.create(
-                      Account(
-                        id: '',
-                        userId: '',
-                        nombre: nombreController.text.trim(),
-                        tipo: tipo,
-                        saldoInicial: saldo,
-                        activo: true,
-                      ),
-                    );
-                  } else {
-                    await _repo.update(account.id, {
-                      'nombre': nombreController.text.trim(),
-                      'tipo': tipo,
-                      'saldo_inicial': saldo,
-                    });
-                  }
-                } catch (e) {
-                  setDialogState(
-                    () => error =
-                        'No se pudo guardar la cuenta. Revisa tu conexion e intenta de nuevo.',
-                  );
-                  return;
-                }
-                if (context.mounted) Navigator.pop(context);
-                if (mounted) _reload();
-              },
-            ),
-          ]),
-        ),
-      ),
-    );
+    await showAccountFormDialog(context, _repo, account: account);
+    if (mounted) _reload();
   }
 
   Future<void> _toggleActivo(Account account) async {
