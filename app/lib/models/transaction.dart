@@ -26,6 +26,7 @@ class Transaction {
     required this.monto,
     required this.fecha,
     this.nota,
+    this.recurringPaymentId,
   });
 
   final String id;
@@ -37,6 +38,7 @@ class Transaction {
   final double monto;
   final DateTime fecha;
   final String? nota;
+  final String? recurringPaymentId;
 
   factory Transaction.fromJson(Map<String, dynamic> json) => Transaction(
         id: json['id'] as String,
@@ -48,6 +50,7 @@ class Transaction {
         monto: (json['monto'] as num).toDouble(),
         fecha: DateTime.parse(json['fecha'] as String),
         nota: json['nota'] as String?,
+        recurringPaymentId: json['recurring_payment_id'] as String?,
       );
 
   Map<String, dynamic> toInsertJson() => {
@@ -58,5 +61,6 @@ class Transaction {
         'monto': monto,
         'fecha': fecha.toIso8601String().split('T').first,
         'nota': nota,
+        'recurring_payment_id': recurringPaymentId,
       };
 }

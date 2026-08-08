@@ -37,4 +37,52 @@ void main() {
 
     expect(t.toInsertJson()['tipo'], 'ingreso');
   });
+
+  test('Transaction.fromJson parses recurring_payment_id', () {
+    final json = {
+      'id': 't1',
+      'user_id': 'u1',
+      'account_id': 'a1',
+      'category_id': 'c1',
+      'account_destino_id': null,
+      'tipo': 'gasto',
+      'monto': 15000.0,
+      'fecha': '2026-08-01',
+      'nota': null,
+      'recurring_payment_id': 'r1',
+    };
+
+    final t = Transaction.fromJson(json);
+
+    expect(t.recurringPaymentId, 'r1');
+  });
+
+  test('toInsertJson includes a null recurring_payment_id when absent', () {
+    final t = Transaction(
+      id: 't1',
+      userId: 'u1',
+      accountId: 'a1',
+      categoryId: 'c1',
+      tipo: TransactionType.gasto,
+      monto: 1000.0,
+      fecha: DateTime(2026, 8, 1),
+    );
+
+    expect(t.toInsertJson()['recurring_payment_id'], isNull);
+  });
+
+  test('toInsertJson round-trips a set recurring_payment_id', () {
+    final t = Transaction(
+      id: 't1',
+      userId: 'u1',
+      accountId: 'a1',
+      categoryId: 'c1',
+      tipo: TransactionType.gasto,
+      monto: 1000.0,
+      fecha: DateTime(2026, 8, 1),
+      recurringPaymentId: 'r1',
+    );
+
+    expect(t.toInsertJson()['recurring_payment_id'], 'r1');
+  });
 }

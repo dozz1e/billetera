@@ -9,11 +9,13 @@ import '../models/account.dart';
 import '../models/transaction.dart';
 import '../repositories/account_repository.dart';
 import '../repositories/category_repository.dart';
+import '../repositories/recurring_payment_repository.dart';
 import '../repositories/transaction_repository.dart';
 import '../services/google_pay_listener_service.dart';
 import '../services/google_pay_plugin_notification_source.dart';
 import '../services/google_pay_settings.dart';
 import '../services/outbox_service.dart';
+import '../services/recurring_payment_service.dart';
 import 'transaction_form_screen.dart';
 
 final _currency = NumberFormat.currency(
@@ -34,10 +36,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final _accountRepo = AccountRepository(Supabase.instance.client);
   final _categoryRepo = CategoryRepository(Supabase.instance.client);
   final _transactionRepo = TransactionRepository(Supabase.instance.client);
+  final _recurringRepo = RecurringPaymentRepository(Supabase.instance.client);
   final _outbox = OutboxService(
     TransactionRepository(Supabase.instance.client),
   );
   GooglePayListenerService? _googlePayListener;
+  bool _generating = false;
 
   late Future<(List<Account>, List<Transaction>)> _future;
 
@@ -58,6 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }).onError((e, st) {
       debugPrint('HomeScreen: failed to start Google Pay listener: $e');
     });
+    _generateDueRecurringPayments();
   }
 
   @override
@@ -80,6 +85,37 @@ class _HomeScreenState extends State<HomeScreen> {
   void _reload() => setState(() {
     _future = _load();
   });
+
+  Future<void> _generateDueRecurringPayments() async {
+    if (_generating) return;
+    _generating = true;
+    try {
+      final accounts = await _accountRepo.fetchAll();
+      final categories = await _categoryRepo.fetchAll();
+      if (!mounted) return;
+      final service = RecurringPaymentService(
+        _recurringRepo,
+        _outbox,
+        accounts,
+        categories,
+      );
+      final count = await service.generateDue();
+      if (count > 0 && mounted) {
+        _reload();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Se generaron $count pago(s) recurrente(s) pendiente(s).',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('HomeScreen: failed to generate due recurring payments: $e');
+    } finally {
+      _generating = false;
+    }
+  }
 
   Future<void> _openNewTransaction() async {
     final accounts = await _accountRepo.fetchAll();
@@ -104,6 +140,16 @@ class _HomeScreenState extends State<HomeScreen> {
           onSubmit: (t) async {
             await _outbox.create(t);
             if (context.mounted) Navigator.pop(context);
+          },
+          onSubmitRecurring: (r) async {
+            await _recurringRepo.create(r);
+            if (context.mounted) Navigator.pop(context);
+            // Unlike a normal transaction, creating a template alone doesn't
+            // put anything in the ledger — if fechaInicio is today or past,
+            // this generates that first occurrence immediately instead of
+            // leaving it stuck until the next full app restart (initState
+            // already ran once before this FAB was tapped).
+            await _generateDueRecurringPayments();
           },
         ),
       ),

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../models/account.dart';
 import '../models/category.dart';
+import '../models/recurring_payment.dart';
 import '../models/transaction.dart';
 
 final _dateFormat = DateFormat('dd/MM/yyyy');
@@ -13,12 +14,14 @@ class TransactionFormScreen extends StatefulWidget {
     required this.accounts,
     required this.categories,
     required this.onSubmit,
+    this.onSubmitRecurring,
     this.initial,
   });
 
   final List<Account> accounts;
   final List<Category> categories;
   final Future<void> Function(Transaction) onSubmit;
+  final Future<void> Function(RecurringPayment)? onSubmitRecurring;
   final Transaction? initial;
 
   @override
@@ -34,6 +37,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   final _montoController = TextEditingController();
   final _notaController = TextEditingController();
   String? _error;
+  bool _recurrente = false;
 
   bool get _isEditing => widget.initial != null;
 
@@ -88,6 +92,28 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       return;
     }
 
+    if (_recurrente) {
+      final recurring = RecurringPayment(
+        id: '',
+        userId: '',
+        accountId: _accountId!,
+        categoryId: _categoryId!,
+        monto: monto,
+        diaMes: _fecha.day,
+        fechaInicio: _fecha,
+        nota: _notaController.text.trim().isEmpty ? null : _notaController.text.trim(),
+        activo: true,
+      );
+      try {
+        await widget.onSubmitRecurring!(recurring);
+      } catch (e) {
+        if (mounted) {
+          setState(() => _error = 'No se pudo guardar el pago recurrente. Revisa tu conexion e intenta de nuevo.');
+        }
+      }
+      return;
+    }
+
     final transaction = Transaction(
       id: widget.initial?.id ?? '',
       userId: widget.initial?.userId ?? '',
@@ -98,6 +124,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       monto: monto,
       fecha: _fecha,
       nota: _notaController.text.trim().isEmpty ? null : _notaController.text.trim(),
+      recurringPaymentId: widget.initial?.recurringPaymentId,
     );
 
     try {
@@ -137,6 +164,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               onSelectionChanged: (s) => setState(() {
                 _tipo = s.first;
                 _categoryId = null;
+                if (_tipo != TransactionType.gasto) _recurrente = false;
               }),
             ),
             const SizedBox(height: 16),
@@ -189,6 +217,19 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 ),
               ],
             ),
+            if (!_isEditing &&
+                _tipo == TransactionType.gasto &&
+                widget.onSubmitRecurring != null) ...[
+              const SizedBox(height: 12),
+              CheckboxListTile(
+                key: const Key('recurrente_checkbox'),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: const Text('Repetir cada mes'),
+                value: _recurrente,
+                onChanged: (v) => setState(() => _recurrente = v ?? false),
+              ),
+            ],
             const SizedBox(height: 20),
             if (_error != null)
               Padding(

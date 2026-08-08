@@ -11,6 +11,7 @@ import '../repositories/budget_repository.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/transaction_repository.dart';
 import 'goals_screen.dart';
+import 'recurring_payments_screen.dart';
 
 final _currency = NumberFormat.currency(
   locale: 'es_CL',
@@ -175,7 +176,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Presupuestos'),
@@ -183,6 +184,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             tabs: [
               Tab(text: 'Presupuestos'),
               Tab(text: 'Metas'),
+              Tab(text: 'Recurrentes'),
             ],
           ),
         ),
@@ -288,6 +290,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               ),
             ),
             const GoalsScreen(),
+            const RecurringPaymentsScreen(),
           ],
         ),
       ),
