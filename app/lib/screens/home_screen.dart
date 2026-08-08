@@ -16,6 +16,8 @@ import '../services/google_pay_plugin_notification_source.dart';
 import '../services/google_pay_settings.dart';
 import '../services/outbox_service.dart';
 import '../services/recurring_payment_service.dart';
+import 'account_detail_screen.dart';
+import 'accounts_screen.dart' show showAccountFormDialog;
 import 'transaction_form_screen.dart';
 
 final _currency = NumberFormat.currency(
@@ -208,39 +210,58 @@ class _HomeScreenState extends State<HomeScreen> {
                                 (MediaQuery.of(context).size.width - 16 * 2 - 12) /
                                 2,
                             child: Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          visual.icon,
-                                          size: 22,
-                                          color: visual.color,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AccountDetailScreen(
+                                        account: a,
+                                        onEdit: () => showAccountFormDialog(
+                                          context,
+                                          _accountRepo,
+                                          account: a,
                                         ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            a.nombre,
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.titleMedium,
-                                            overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  );
+                                  if (mounted) _reload();
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            visual.icon,
+                                            size: 22,
+                                            color: visual.color,
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      _currency.format(balance),
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.titleLarge,
-                                    ),
-                                  ],
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              a.nombre,
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.titleMedium,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        _currency.format(balance),
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleLarge,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
