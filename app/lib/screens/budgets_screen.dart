@@ -121,6 +121,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               onCancel: () => Navigator.pop(context),
               onConfirm: () async {
                 final monto = parseMoneyInput(montoController.text);
+                if (monto <= 0) {
+                  setDialogState(() => error = 'Monto invalido');
+                  return;
+                }
                 try {
                   await _budgetRepo.upsert(
                     Budget(

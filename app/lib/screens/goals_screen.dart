@@ -184,6 +184,10 @@ class _GoalsScreenState extends State<GoalsScreen> {
               onCancel: () => Navigator.pop(context),
               onConfirm: () async {
                 final monto = parseMoneyInput(montoController.text);
+                if (monto <= 0) {
+                  setDialogState(() => error = 'Monto invalido');
+                  return;
+                }
                 try {
                   await _goalRepo.create(
                     Goal(
