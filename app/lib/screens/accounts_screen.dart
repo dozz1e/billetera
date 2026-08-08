@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/colors.dart';
 import '../core/dialogs.dart';
+import '../core/money_input_formatter.dart';
 import '../models/account.dart';
 import '../repositories/account_repository.dart';
 import 'account_detail_screen.dart';
@@ -18,7 +19,7 @@ Future<Account?> showAccountFormDialog(
 }) async {
   final nombreController = TextEditingController(text: account?.nombre ?? '');
   final saldoController = TextEditingController(
-    text: account?.saldoInicial.toString() ?? '0',
+    text: account == null ? '' : formatMoneyForDisplay(account.saldoInicial),
   );
   var tipo = account?.tipo ?? _tipos.first;
   String? error;
@@ -47,9 +48,8 @@ Future<Account?> showAccountFormDialog(
           const SizedBox(height: 14),
           TextField(
             controller: saldoController,
-            keyboardType: const TextInputType.numberWithOptions(
-              decimal: true,
-            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [MoneyInputFormatter()],
             decoration: const InputDecoration(labelText: 'Saldo inicial'),
           ),
           if (error != null) ...[
@@ -63,7 +63,7 @@ Future<Account?> showAccountFormDialog(
           dialogActions(
             onCancel: () => Navigator.pop(context),
             onConfirm: () async {
-              final saldo = double.tryParse(saldoController.text) ?? 0;
+              final saldo = parseMoneyInput(saldoController.text);
               try {
                 if (account == null) {
                   result = await repo.create(

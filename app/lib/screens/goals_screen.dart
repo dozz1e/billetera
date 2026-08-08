@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/colors.dart';
 import '../core/dialogs.dart';
+import '../core/money_input_formatter.dart';
 import '../logic/balance_calculator.dart';
 import '../logic/goal_state.dart';
 import '../models/account.dart';
@@ -146,9 +147,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
             const SizedBox(height: 14),
             TextField(
               controller: montoController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [MoneyInputFormatter()],
               decoration: const InputDecoration(labelText: 'Monto objetivo'),
             ),
             const SizedBox(height: 14),
@@ -183,7 +183,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
             dialogActions(
               onCancel: () => Navigator.pop(context),
               onConfirm: () async {
-                final monto = double.tryParse(montoController.text) ?? 0;
+                final monto = parseMoneyInput(montoController.text);
                 try {
                   await _goalRepo.create(
                     Goal(

@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/colors.dart';
 import '../core/dialogs.dart';
+import '../core/money_input_formatter.dart';
 import '../logic/budget_progress.dart';
 import '../models/budget.dart';
 import '../models/category.dart';
@@ -104,9 +105,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             const SizedBox(height: 14),
             TextField(
               controller: montoController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [MoneyInputFormatter()],
               decoration: const InputDecoration(labelText: 'Monto limite'),
             ),
             if (error != null) ...[
@@ -120,7 +120,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             dialogActions(
               onCancel: () => Navigator.pop(context),
               onConfirm: () async {
-                final monto = double.tryParse(montoController.text) ?? 0;
+                final monto = parseMoneyInput(montoController.text);
                 try {
                   await _budgetRepo.upsert(
                     Budget(

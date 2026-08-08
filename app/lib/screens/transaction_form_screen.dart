@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../core/money_input_formatter.dart';
 import '../models/account.dart';
 import '../models/category.dart';
 import '../models/recurring_payment.dart';
@@ -53,9 +54,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     _fecha = initial?.fecha ?? DateTime.now();
     _accountDestinoId = initial?.accountDestinoId;
     if (initial != null) {
-      _montoController.text = initial.monto == initial.monto.roundToDouble()
-          ? initial.monto.toStringAsFixed(0)
-          : initial.monto.toString();
+      _montoController.text = formatMoneyForDisplay(initial.monto);
       _notaController.text = initial.nota ?? '';
       _accountId = initial.accountId;
       _categoryId = initial.categoryId;
@@ -73,7 +72,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
   Future<void> _submit() async {
-    final monto = double.tryParse(_montoController.text);
+    final monto = _montoController.text.isEmpty ? null : parseMoneyInput(_montoController.text);
     if (monto == null || monto <= 0) {
       setState(() => _error = 'Monto invalido');
       return;
@@ -171,7 +170,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             TextField(
               key: const Key('monto_field'),
               controller: _montoController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: TextInputType.number,
+              inputFormatters: [MoneyInputFormatter()],
               decoration: const InputDecoration(labelText: 'Monto'),
             ),
             const SizedBox(height: 12),

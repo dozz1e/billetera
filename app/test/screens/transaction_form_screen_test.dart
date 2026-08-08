@@ -76,7 +76,7 @@ void main() {
     ));
 
     expect(find.text('Editar transaccion'), findsOneWidget);
-    expect(find.text('2500'), findsOneWidget);
+    expect(find.text('2.500'), findsOneWidget);
     expect(find.text('Super'), findsOneWidget);
     expect(find.text('10/05/2026'), findsOneWidget);
     expect(find.text('Efectivo'), findsOneWidget);

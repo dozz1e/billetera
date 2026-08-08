@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/colors.dart';
 import '../core/dialogs.dart';
+import '../core/money_input_formatter.dart';
 import '../models/debt.dart';
 import '../models/person.dart';
 import '../repositories/debt_repository.dart';
@@ -44,7 +45,7 @@ class _PersonDebtsScreenState extends State<PersonDebtsScreen> {
   Future<void> _openForm({Debt? debt}) async {
     final motivoController = TextEditingController(text: debt?.motivo ?? '');
     final montoController = TextEditingController(
-      text: debt?.monto.toString() ?? '',
+      text: debt == null ? '' : formatMoneyForDisplay(debt.monto),
     );
     var fecha = debt?.fecha ?? DateTime.now();
     String? error;
@@ -63,9 +64,8 @@ class _PersonDebtsScreenState extends State<PersonDebtsScreen> {
             const SizedBox(height: 14),
             TextField(
               controller: montoController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [MoneyInputFormatter()],
               decoration: const InputDecoration(labelText: 'Monto'),
             ),
             const SizedBox(height: 14),
@@ -100,7 +100,7 @@ class _PersonDebtsScreenState extends State<PersonDebtsScreen> {
             dialogActions(
               onCancel: () => Navigator.pop(context),
               onConfirm: () async {
-                final monto = double.tryParse(montoController.text) ?? 0;
+                final monto = parseMoneyInput(montoController.text);
                 if (motivoController.text.trim().isEmpty) {
                   setDialogState(() => error = 'Ingresa un motivo.');
                   return;
