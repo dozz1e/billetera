@@ -5,9 +5,12 @@ double calculateAccountBalance({
   required double saldoInicial,
   required String accountId,
   required List<Transaction> transactions,
+  DateTime? asOf,
 }) {
+  final cutoff = asOf ?? DateTime.now();
   var balance = saldoInicial;
   for (final t in transactions) {
+    if (t.fecha.isAfter(cutoff)) continue;
     switch (t.tipo) {
       case TransactionType.ingreso:
         if (t.accountId == accountId) balance += t.monto;
@@ -24,6 +27,7 @@ double calculateAccountBalance({
 double calculateTotalBalance({
   required List<Account> accounts,
   required List<Transaction> allTransactions,
+  DateTime? asOf,
 }) {
   var total = 0.0;
   for (final account in accounts) {
@@ -31,6 +35,7 @@ double calculateTotalBalance({
       saldoInicial: account.saldoInicial,
       accountId: account.id,
       transactions: allTransactions,
+      asOf: asOf,
     );
   }
   return total;

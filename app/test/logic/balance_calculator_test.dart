@@ -37,6 +37,37 @@ void main() {
 
       expect(balance, 100);
     });
+
+    test('excludes transactions dated after asOf (future transactions do not affect balance yet)', () {
+      final transactions = [
+        Transaction(id: '1', userId: 'u', accountId: 'a1', categoryId: 'c1', tipo: TransactionType.ingreso, monto: 1000, fecha: DateTime(2026, 1, 1)),
+        Transaction(id: '2', userId: 'u', accountId: 'a1', categoryId: 'c2', tipo: TransactionType.gasto, monto: 300, fecha: DateTime(2026, 6, 1)),
+      ];
+
+      final balance = calculateAccountBalance(
+        saldoInicial: 500,
+        accountId: 'a1',
+        transactions: transactions,
+        asOf: DateTime(2026, 1, 15),
+      );
+
+      expect(balance, 1500); // 500 + 1000, the June gasto is still in the future
+    });
+
+    test('includes a transaction dated exactly on asOf', () {
+      final transactions = [
+        Transaction(id: '1', userId: 'u', accountId: 'a1', categoryId: 'c1', tipo: TransactionType.ingreso, monto: 1000, fecha: DateTime(2026, 1, 15)),
+      ];
+
+      final balance = calculateAccountBalance(
+        saldoInicial: 0,
+        accountId: 'a1',
+        transactions: transactions,
+        asOf: DateTime(2026, 1, 15),
+      );
+
+      expect(balance, 1000);
+    });
   });
 
   group('calculateTotalBalance', () {
